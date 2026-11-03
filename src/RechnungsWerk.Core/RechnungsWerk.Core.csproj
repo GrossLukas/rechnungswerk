@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>RechnungsWerk.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ZUGFeRD-csharp" />
+    <PackageReference Include="ZUGFeRD.PDF-csharp" />
+    <PackageReference Include="PDFsharp-extended" />
+    <PackageReference Include="MailKit" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Pdf\Fonts\*.ttf" LogicalName="RechnungsWerk.Fonts.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="RechnungsWerk.Tests" />
+  </ItemGroup>
+
+</Project>

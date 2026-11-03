@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Hinweise aus der NuGet-Sicherheitsprüfung sollen sichtbar bleiben, aber den Bau nicht blockieren. -->
+    <WarningsNotAsErrors>NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
+    <SatelliteResourceLanguages>de;en</SatelliteResourceLanguages>
+    <Product>RechnungsWerk</Product>
+    <Company>RechnungsWerk</Company>
+    <Authors>RechnungsWerk contributors</Authors>
+    <Copyright>Copyright © 2026 RechnungsWerk contributors</Copyright>
+    <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+</Project>
