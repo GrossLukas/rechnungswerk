@@ -1,0 +1,82 @@
+@page "/kunden"
+@rendermode InteractiveServer
+@inject CustomerService Customers
+
+<PageTitle>Kunden – RechnungsWerk</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1>Kunden</h1>
+        <p class="lead">Rechnungsempfänger mit Anschrift, E-Mail und – bei Behörden – Leitweg-ID.</p>
+    </div>
+    <div class="actions">
+        <a class="btn btn-primary" href="kunden/neu">Neuer Kunde</a>
+    </div>
+</div>
+
+@if (customers is null)
+{
+    <p class="muted" role="status">Wird geladen …</p>
+}
+else if (customers.Count == 0)
+{
+    <div class="empty-state">
+        <h2>Noch keine Kunden</h2>
+        <p>Lege deinen ersten Kunden an, um ihm eine Rechnung zu schreiben.</p>
+        <a class="btn btn-primary" href="kunden/neu">Kunden anlegen</a>
+    </div>
+}
+else
+{
+    <div class="toolbar">
+        <label class="visually-hidden" for="customer-search">Kunden durchsuchen</label>
+        <input id="customer-search" type="search" placeholder="Nach Name, Ort oder E-Mail suchen" @bind="search" @bind:event="oninput" />
+    </div>
+    <div class="table-wrap">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Ort</th>
+                    <th scope="col">E-Mail</th>
+                    <th scope="col">Leitweg-ID</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var customer in Filtered)
+                {
+                    <tr>
+                        <td><a href="@($"kunden/{customer.Id}")"><strong>@customer.Name</strong></a></td>
+                        <td>@customer.PostalCode @customer.City</td>
+                        <td>@customer.Email</td>
+                        <td class="mono">@customer.LeitwegId</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (!Filtered.Any())
+    {
+        <p class="muted">Kein Kunde passt zu „@search“.</p>
+    }
+}
+
+@code {
+    private List<Customer>? customers;
+    private string search = "";
+
+    private IEnumerable<Customer> Filtered
+    {
+        get
+        {
+            var term = search.Trim();
+            return term.Length == 0
+                ? customers ?? []
+                : (customers ?? []).Where(c => c.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
+                                               || c.City.Contains(term, StringComparison.OrdinalIgnoreCase)
+                                               || (c.Email?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+    }
+
+    protected override async Task OnInitializedAsync() => customers = await Customers.ListAsync();
+}

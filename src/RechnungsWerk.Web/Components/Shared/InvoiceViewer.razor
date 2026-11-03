@@ -1,0 +1,315 @@
+@* Gut lesbare Darstellung einer E-Rechnung – auch zum Drucken bzw. „Als PDF speichern“. *@
+<article class="invoice-sheet" aria-label="Rechnung @View.Number">
+    <header class="invoice-head">
+        <div>
+            <p class="eyebrow">@View.FormatLabel@(View.FromPdf ? " · aus PDF gelesen" : null)</p>
+            <h2 class="invoice-title">@View.TypeLabel @View.Number</h2>
+        </div>
+        <dl class="meta-list">
+            <div><dt>Rechnungsdatum</dt><dd>@GermanFormat.Date(View.IssueDate)</dd></div>
+            @if (View.DueDate is not null)
+            {
+                <div><dt>Fällig am</dt><dd>@GermanFormat.Date(View.DueDate)</dd></div>
+            }
+            @if (View.DeliveryDate is not null)
+            {
+                <div><dt>Leistungsdatum</dt><dd>@GermanFormat.Date(View.DeliveryDate)</dd></div>
+            }
+            @if (View.PeriodStart is not null || View.PeriodEnd is not null)
+            {
+                <div><dt>Leistungszeitraum</dt><dd>@GermanFormat.Date(View.PeriodStart) – @GermanFormat.Date(View.PeriodEnd)</dd></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(View.BuyerReference))
+            {
+                <div><dt>@(View.BuyerReferenceIsLeitwegId ? "Leitweg-ID" : "Käuferreferenz")</dt><dd class="mono">@View.BuyerReference</dd></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(View.OrderReference))
+            {
+                <div><dt>Bestellnummer</dt><dd>@View.OrderReference</dd></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(View.ContractReference))
+            {
+                <div><dt>Vertragsnummer</dt><dd>@View.ContractReference</dd></div>
+            }
+        </dl>
+    </header>
+
+    <div class="parties">
+        @Party("Rechnungssteller", View.Seller)
+        @Party("Rechnungsempfänger", View.Buyer)
+    </div>
+
+    <section class="invoice-section">
+        <h3>Positionen</h3>
+        <div class="table-wrap">
+            <table class="table table-lines">
+                <thead>
+                    <tr>
+                        <th scope="col">Pos.</th>
+                        <th scope="col">Bezeichnung</th>
+                        <th scope="col" class="num">Menge</th>
+                        <th scope="col" class="num">Einzelpreis</th>
+                        <th scope="col" class="num">USt</th>
+                        <th scope="col" class="num">Betrag</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in View.Lines)
+                    {
+                        <tr>
+                            <td>@line.Id</td>
+                            <td>
+                                <strong>@line.Name</strong>
+                                @if (!string.IsNullOrWhiteSpace(line.Description))
+                                {
+                                    <span class="line-description">@line.Description</span>
+                                }
+                                @if (line.PeriodStart is not null || line.PeriodEnd is not null)
+                                {
+                                    <span class="line-description">Zeitraum: @GermanFormat.Date(line.PeriodStart) – @GermanFormat.Date(line.PeriodEnd)</span>
+                                }
+                            </td>
+                            <td class="num">@GermanFormat.Quantity(line.Quantity) @UnitCodes.Label(line.UnitCode)</td>
+                            <td class="num">@GermanFormat.UnitPrice(line.UnitPrice, View.Currency)</td>
+                            <td class="num">@GermanFormat.Percent(line.VatRate)</td>
+                            <td class="num">@GermanFormat.Money(line.NetAmount, View.Currency)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    @if (View.AllowanceCharges.Count > 0)
+    {
+        <section class="invoice-section">
+            <h3>Zu- und Abschläge</h3>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr><th scope="col">Art</th><th scope="col">Grund</th><th scope="col" class="num">USt</th><th scope="col" class="num">Betrag</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in View.AllowanceCharges)
+                        {
+                            <tr>
+                                <td>@(item.IsCharge ? "Zuschlag" : "Abschlag")</td>
+                                <td>@item.Reason</td>
+                                <td class="num">@(item.VatRate is { } rate ? GermanFormat.Percent(rate) : "")</td>
+                                <td class="num">@GermanFormat.Money(item.IsCharge ? item.Amount : -item.Amount, View.Currency)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+
+    <div class="invoice-summary">
+        <section class="invoice-section">
+            <h3>Umsatzsteuer</h3>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr><th scope="col">Kategorie</th><th scope="col" class="num">Satz</th><th scope="col" class="num">Netto</th><th scope="col" class="num">Steuer</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var tax in View.Taxes)
+                        {
+                            <tr>
+                                <td>
+                                    @CodeLabels.TaxCategory(tax.CategoryCode)
+                                    @if (!string.IsNullOrWhiteSpace(tax.ExemptionReason))
+                                    {
+                                        <span class="line-description">@tax.ExemptionReason</span>
+                                    }
+                                </td>
+                                <td class="num">@GermanFormat.Percent(tax.Rate)</td>
+                                <td class="num">@GermanFormat.Money(tax.TaxableAmount, View.Currency)</td>
+                                <td class="num">@GermanFormat.Money(tax.TaxAmount, View.Currency)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="invoice-section totals" aria-label="Summen">
+            <h3>Summen</h3>
+            <dl class="totals-list">
+                @Total("Summe der Positionen", View.Totals.LineTotal)
+                @Total("Abschläge", View.Totals.AllowanceTotal is { } allowance and not 0 ? -allowance : null)
+                @Total("Zuschläge", View.Totals.ChargeTotal is { } charge and not 0 ? charge : null)
+                @Total("Nettobetrag", View.Totals.TaxBasis)
+                @Total("Umsatzsteuer", View.Totals.TaxTotal)
+                @Total("Gesamtbetrag", View.Totals.GrandTotal)
+                @Total("Bereits gezahlt", View.Totals.Prepaid is { } prepaid and not 0 ? -prepaid : null)
+                @Total("Rundung", View.Totals.Rounding is { } rounding and not 0 ? rounding : null)
+                <div class="total-due"><dt>Zu zahlen</dt><dd>@GermanFormat.Money(View.Totals.DuePayable ?? View.Totals.GrandTotal, View.Currency)</dd></div>
+            </dl>
+        </section>
+    </div>
+
+    <section class="invoice-section">
+        <h3>Zahlung</h3>
+        <dl class="detail-list">
+            @if (!string.IsNullOrWhiteSpace(View.Payment.MeansLabel ?? View.Payment.MeansCode))
+            {
+                <div><dt>Zahlungsart</dt><dd>@(View.Payment.MeansLabel ?? CodeLabels.PaymentMeans(View.Payment.MeansCode))</dd></div>
+            }
+            @foreach (var account in View.Payment.Accounts)
+            {
+                <div><dt>IBAN</dt><dd class="mono">@GermanFormat.Iban(account.Iban)</dd></div>
+                @if (!string.IsNullOrWhiteSpace(account.Bic))
+                {
+                    <div><dt>BIC</dt><dd class="mono">@account.Bic</dd></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(account.BankName))
+                {
+                    <div><dt>Bank</dt><dd>@account.BankName</dd></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(account.AccountName))
+                {
+                    <div><dt>Kontoinhaber</dt><dd>@account.AccountName</dd></div>
+                }
+            }
+            @if (!string.IsNullOrWhiteSpace(View.Payment.PaymentReference))
+            {
+                <div><dt>Verwendungszweck</dt><dd class="mono">@View.Payment.PaymentReference</dd></div>
+            }
+            @foreach (var term in View.Payment.Terms)
+            {
+                <div><dt>Bedingungen</dt><dd>@term</dd></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(View.Payment.Information))
+            {
+                <div><dt>Hinweis</dt><dd>@View.Payment.Information</dd></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(View.Payment.CreditorId))
+            {
+                <div><dt>Gläubiger-ID</dt><dd class="mono">@View.Payment.CreditorId</dd></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(View.Payment.MandateReference))
+            {
+                <div><dt>Mandatsreferenz</dt><dd class="mono">@View.Payment.MandateReference</dd></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(View.Payment.DebitedIban))
+            {
+                <div><dt>Belastetes Konto</dt><dd class="mono">@GermanFormat.Iban(View.Payment.DebitedIban)</dd></div>
+            }
+        </dl>
+    </section>
+
+    @if (View.Notes.Count > 0)
+    {
+        <section class="invoice-section">
+            <h3>Hinweise</h3>
+            @foreach (var note in View.Notes)
+            {
+                <p class="note">@note</p>
+            }
+        </section>
+    }
+
+    @if (View.Attachments.Count > 0)
+    {
+        <section class="invoice-section">
+            <h3>Anhänge</h3>
+            <ul class="attachment-list">
+                @foreach (var attachment in View.Attachments)
+                {
+                    <li>
+                        <strong>@(attachment.FileName ?? attachment.Id ?? "Anhang")</strong>
+                        @if (!string.IsNullOrWhiteSpace(attachment.Description))
+                        {
+                            <span> – @attachment.Description</span>
+                        }
+                        <span class="muted">
+                            @if (attachment.Content is not null)
+                            {
+                                @($" · {attachment.MimeType ?? "unbekannter Typ"} · {FileSize(attachment.Size)}")
+                            }
+                            @if (attachment.EmbeddedInPdf)
+                            {
+                                @(" · im PDF eingebettet")
+                            }
+                            @if (!string.IsNullOrWhiteSpace(attachment.ExternalUri))
+                            {
+                                @($" · externer Verweis: {attachment.ExternalUri}")
+                            }
+                        </span>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+</article>
+
+@code {
+    [Parameter, EditorRequired]
+    public InvoiceView View { get; set; } = default!;
+
+    private RenderFragment Party(string title, PartyView party) =>
+        @<section class="party">
+            <h3>@title</h3>
+            <p class="party-name">@party.Name</p>
+            <p class="address">
+                @party.Street
+                @if (!string.IsNullOrWhiteSpace(party.AdditionalStreet))
+                {
+                    <br />@party.AdditionalStreet
+                }
+                <br />@party.PostalCode @party.City
+                @if (!string.IsNullOrWhiteSpace(party.CountryCode) && !string.Equals(party.CountryCode, "DE", StringComparison.OrdinalIgnoreCase))
+                {
+                    <br />@CodeLabels.Country(party.CountryCode)
+                }
+            </p>
+            <dl class="detail-list compact">
+                @foreach (var vatId in party.VatIds)
+                {
+                    <div><dt>USt-IdNr.</dt><dd class="mono">@vatId</dd></div>
+                }
+                @foreach (var taxNumber in party.TaxNumbers)
+                {
+                    <div><dt>Steuernummer</dt><dd class="mono">@taxNumber</dd></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(party.Identifier))
+                {
+                    <div><dt>Kennung</dt><dd class="mono">@party.Identifier</dd></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(party.ContactName))
+                {
+                    <div><dt>Kontakt</dt><dd>@party.ContactName</dd></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(party.ContactPhone))
+                {
+                    <div><dt>Telefon</dt><dd>@party.ContactPhone</dd></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(party.ContactEmail))
+                {
+                    <div><dt>E-Mail</dt><dd>@party.ContactEmail</dd></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(party.ElectronicAddress)
+                     && !string.Equals(party.ElectronicAddress, party.ContactEmail, StringComparison.OrdinalIgnoreCase))
+                {
+                    <div><dt>@(party.ElectronicAddressLabel ?? "Elektronische Adresse")</dt><dd class="mono">@party.ElectronicAddress</dd></div>
+                }
+            </dl>
+        </section>;
+
+    private RenderFragment Total(string label, decimal? amount) => __builder =>
+    {
+        if (amount is { } value)
+        {
+            <div><dt>@label</dt><dd>@GermanFormat.Money(value, View.Currency)</dd></div>
+        }
+    };
+
+    private static string FileSize(long bytes) => bytes switch
+    {
+        < 1024 => $"{bytes} Byte",
+        < 1024 * 1024 => $"{(bytes / 1024d).ToString("0.#", GermanFormat.Culture)} KB",
+        _ => $"{(bytes / 1024d / 1024d).ToString("0.#", GermanFormat.Culture)} MB",
+    };
+}

@@ -1,0 +1,97 @@
+@page "/rechnungen"
+@rendermode InteractiveServer
+@inject InvoiceService Invoices
+@inject CompanyService Companies
+@inject CustomerService Customers
+
+<PageTitle>Rechnungen – RechnungsWerk</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1>Rechnungen</h1>
+        <p class="lead">Alle Rechnungen mit Betrag und Versandstatus.</p>
+    </div>
+    <div class="actions">
+        <a class="btn btn-primary" href="rechnungen/neu">Neue Rechnung</a>
+    </div>
+</div>
+
+@if (invoices is null)
+{
+    <p class="muted" role="status">Wird geladen …</p>
+}
+else
+{
+    @if (!hasProfile)
+    {
+        <div class="alert alert-warning">Bevor du Rechnungen schreibst, vervollständige dein <a href="einstellungen/firma">Firmenprofil</a>.</div>
+    }
+    else if (!hasCustomers)
+    {
+        <div class="alert alert-info">Lege zuerst einen <a href="kunden/neu">Kunden</a> an – dann kannst du ihm eine Rechnung schreiben.</div>
+    }
+
+    @if (invoices.Count == 0)
+    {
+        <div class="empty-state">
+            <h2>Noch keine Rechnungen</h2>
+            <p>Deine erste E-Rechnung ist in wenigen Minuten erstellt.</p>
+            <a class="btn btn-primary" href="rechnungen/neu">Rechnung erstellen</a>
+        </div>
+    }
+    else
+    {
+        <div class="toolbar">
+            <label class="visually-hidden" for="invoice-search">Rechnungen durchsuchen</label>
+            <input id="invoice-search" type="search" placeholder="Nach Nummer oder Kunde suchen" @bind="search" @bind:event="oninput" />
+        </div>
+        <div class="table-wrap">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Nummer</th>
+                        <th scope="col">Datum</th>
+                        <th scope="col">Kunde</th>
+                        <th scope="col" class="num">Betrag</th>
+                        <th scope="col">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var invoice in Filtered)
+                    {
+                        <tr>
+                            <td><a href="@($"rechnungen/{invoice.Id}")"><strong>@invoice.Number</strong></a></td>
+                            <td>@GermanFormat.Date(invoice.IssueDate)</td>
+                            <td>@invoice.CustomerName</td>
+                            <td class="num">@GermanFormat.Money(invoice.GrandTotal, invoice.Currency)</td>
+                            <td><InvoiceStatus Invoice="invoice" /></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (!Filtered.Any())
+        {
+            <p class="muted">Keine Rechnung passt zu „@search“.</p>
+        }
+    }
+}
+
+@code {
+    private List<Invoice>? invoices;
+    private bool hasProfile = true;
+    private bool hasCustomers = true;
+    private string search = "";
+
+    private IEnumerable<Invoice> Filtered => string.IsNullOrWhiteSpace(search)
+        ? invoices ?? []
+        : (invoices ?? []).Where(i => i.Number.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)
+                                      || i.CustomerName.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        hasProfile = await Companies.GetAsync() is not null;
+        hasCustomers = (await Customers.ListAsync()).Count > 0;
+        invoices = await Invoices.ListAsync();
+    }
+}

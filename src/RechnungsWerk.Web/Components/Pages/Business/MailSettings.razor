@@ -1,0 +1,198 @@
+@page "/einstellungen/versand"
+@rendermode InteractiveServer
+@using RechnungsWerk.Core.Mail
+@inject SmtpSettingsService SmtpSettings
+@inject InvoiceMailService Mail
+@inject AuthenticationStateProvider AuthenticationState
+
+<PageTitle>E-Mail-Versand – RechnungsWerk</PageTitle>
+
+<SettingsNav />
+
+<div class="page-header">
+    <div>
+        <h1>E-Mail-Versand</h1>
+        <p class="lead">RechnungsWerk verschickt Rechnungen über dein eigenes E-Mail-Postfach (SMTP).</p>
+    </div>
+</div>
+
+@if (form is null)
+{
+    <p class="muted" role="status">Wird geladen …</p>
+}
+else
+{
+    <div class="alert alert-info">
+        <p><strong>Tipp:</strong> Gmail und Outlook.com verlangen für SMTP ein App-Passwort (mit aktivierter Zwei-Faktor-Anmeldung) –
+            dein normales Passwort wird abgelehnt. Bei Microsoft 365 ist „SMTP AUTH“ oft abgeschaltet und muss von der
+            Administration für das Postfach freigegeben werden.</p>
+    </div>
+
+    <EditForm Model="form" OnValidSubmit="SaveAsync" novalidate class="form form-wide">
+        <ModelValidator />
+        <fieldset class="form-section">
+            <legend>Server</legend>
+            <div class="form-grid">
+                <div class="field span-2">
+                    <label for="smtp-host">SMTP-Server</label>
+                    <InputText id="smtp-host" @bind-Value="form.Host" placeholder="smtp.example.de" autocomplete="off" spellcheck="false" />
+                    <ValidationMessage For="() => form.Host" />
+                </div>
+                <div class="field">
+                    <label for="smtp-security">Verschlüsselung</label>
+                    <InputSelect id="smtp-security" Value="form.Security" ValueChanged="(SmtpSecurity value) => ChangeSecurity(value)" ValueExpression="() => form.Security">
+                        <option value="@SmtpSecurity.StartTls">STARTTLS (meist Port 587)</option>
+                        <option value="@SmtpSecurity.SslOnConnect">SSL/TLS (meist Port 465)</option>
+                        <option value="@SmtpSecurity.None">Keine – nur im eigenen Netz</option>
+                    </InputSelect>
+                </div>
+                <div class="field">
+                    <label for="smtp-port">Port</label>
+                    <InputNumber id="smtp-port" @bind-Value="form.Port" min="1" max="65535" />
+                    <ValidationMessage For="() => form.Port" />
+                </div>
+                <div class="field">
+                    <label for="smtp-user">Benutzername</label>
+                    <InputText id="smtp-user" @bind-Value="form.UserName" autocomplete="off" spellcheck="false" />
+                    <ValidationMessage For="() => form.UserName" />
+                </div>
+                <div class="field">
+                    <label for="smtp-password">Passwort</label>
+                    <InputText id="smtp-password" type="password" @bind-Value="form.NewPassword" autocomplete="new-password"
+                               placeholder="@(hasStoredPassword ? "Gespeichert – leer lassen zum Behalten" : "")" aria-describedby="smtp-password-hint" />
+                    <small id="smtp-password-hint" class="hint">Wird verschlüsselt gespeichert und nie wieder angezeigt.</small>
+                    <ValidationMessage For="() => form.NewPassword" />
+                    @if (hasStoredPassword)
+                    {
+                        <label class="checkbox">
+                            <InputCheckbox @bind-Value="form.RemovePassword" />
+                            <span>Gespeichertes Passwort entfernen</span>
+                        </label>
+                    }
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+            <legend>Absender</legend>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="smtp-sender-name">Absendername</label>
+                    <InputText id="smtp-sender-name" @bind-Value="form.SenderName" />
+                    <ValidationMessage For="() => form.SenderName" />
+                </div>
+                <div class="field">
+                    <label for="smtp-sender-email">Absenderadresse</label>
+                    <InputText id="smtp-sender-email" type="email" @bind-Value="form.SenderEmail" />
+                    <ValidationMessage For="() => form.SenderEmail" />
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+            <legend>Vorlage für Rechnungsmails</legend>
+            <div class="form-grid">
+                <div class="field span-2">
+                    <label for="smtp-subject">Betreff</label>
+                    <InputText id="smtp-subject" @bind-Value="form.SubjectTemplate" />
+                    <ValidationMessage For="() => form.SubjectTemplate" />
+                </div>
+                <div class="field span-2">
+                    <label for="smtp-body">Text</label>
+                    <InputTextArea id="smtp-body" @bind-Value="form.BodyTemplate" rows="9" />
+                    <ValidationMessage For="() => form.BodyTemplate" />
+                </div>
+            </div>
+            <p class="hint">Platzhalter:</p>
+            <ul class="placeholder-list">
+                @foreach (var (placeholder, description) in MailTemplate.Placeholders)
+                {
+                    <li><code>@placeholder</code> – @description</li>
+                }
+            </ul>
+        </fieldset>
+
+        @if (saved)
+        {
+            <div class="alert alert-success" role="status">Gespeichert.</div>
+        }
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" disabled="@busy">Einstellungen speichern</button>
+        </div>
+    </EditForm>
+
+    <section class="card">
+        <h2>Testmail senden</h2>
+        <p class="hint">Verwendet die Angaben aus dem Formular oben – auch wenn du sie noch nicht gespeichert hast.</p>
+        <div class="inline-form">
+            <div class="field">
+                <label for="test-to">Empfänger der Testmail</label>
+                <input id="test-to" type="email" @bind="testRecipient" autocomplete="email" />
+            </div>
+            <button type="button" class="btn btn-secondary" @onclick="SendTestAsync" disabled="@busy">@(busy ? "Wird gesendet …" : "Testmail senden")</button>
+        </div>
+        @if (testResult is not null)
+        {
+            <div class="alert @(testResult.Succeeded ? "alert-success" : "alert-error")" role="status">
+                @(testResult.Succeeded ? "Die Testmail wurde verschickt. Schau in das Postfach des Empfängers." : string.Join(" ", testResult.Errors))
+            </div>
+        }
+    </section>
+}
+
+@code {
+    private SmtpForm? form;
+    private bool hasStoredPassword;
+    private string? testRecipient;
+    private ServiceResult? testResult;
+    private bool busy;
+    private bool saved;
+
+    protected override async Task OnInitializedAsync()
+    {
+        (form, hasStoredPassword, _) = await SmtpSettings.LoadFormAsync();
+        var state = await AuthenticationState.GetAuthenticationStateAsync();
+        testRecipient = state.User.Identity?.Name;
+    }
+
+    private void ChangeSecurity(SmtpSecurity value)
+    {
+        form!.Security = value;
+        // Übliche Ports mitziehen, eigene Ports nicht anfassen.
+        if (form.Port is 25 or 465 or 587)
+        {
+            form.Port = value == SmtpSecurity.SslOnConnect ? 465 : 587;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        busy = true;
+        saved = false;
+        try
+        {
+            await SmtpSettings.SaveAsync(form!);
+            (form, hasStoredPassword, _) = await SmtpSettings.LoadFormAsync();
+            saved = true;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task SendTestAsync()
+    {
+        busy = true;
+        testResult = null;
+        try
+        {
+            testResult = await Mail.SendTestAsync(form!, testRecipient);
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

@@ -1,0 +1,62 @@
+@page "/einstellungen/firma"
+@rendermode InteractiveServer
+@inject CompanyService Companies
+
+<PageTitle>Firmenprofil – RechnungsWerk</PageTitle>
+
+<SettingsNav />
+
+<div class="page-header">
+    <div>
+        <h1>Firmenprofil</h1>
+        <p class="lead">Diese Angaben stehen als Rechnungssteller auf jeder neuen Rechnung. Bereits gespeicherte Rechnungen behalten ihre Angaben.</p>
+    </div>
+</div>
+
+@if (form is null)
+{
+    <p class="muted" role="status">Wird geladen …</p>
+}
+else
+{
+    <EditForm Model="form" OnValidSubmit="SaveAsync" novalidate class="form form-wide">
+        <ModelValidator />
+        <CompanyFields Model="form" />
+
+        @if (saved)
+        {
+            <div class="alert alert-success" role="status">Gespeichert.</div>
+        }
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" disabled="@saving">@(saving ? "Wird gespeichert …" : "Firmenprofil speichern")</button>
+        </div>
+    </EditForm>
+}
+
+@code {
+    private CompanyForm? form;
+    private bool saving;
+    private bool saved;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var profile = await Companies.GetAsync();
+        form = profile is null ? new CompanyForm() : CompanyForm.From(profile);
+    }
+
+    private async Task SaveAsync()
+    {
+        saving = true;
+        saved = false;
+        try
+        {
+            await Companies.SaveAsync(form!);
+            saved = true;
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+}

@@ -1,0 +1,8 @@
+@page "/einstellungen"
+@inject NavigationManager Navigation
+
+<PageTitle>Einstellungen – RechnungsWerk</PageTitle>
+
+@code {
+    protected override void OnInitialized() => Navigation.NavigateTo("einstellungen/firma");
+}

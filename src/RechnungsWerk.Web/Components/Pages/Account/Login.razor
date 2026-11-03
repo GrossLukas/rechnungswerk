@@ -1,0 +1,95 @@
+@page "/anmelden"
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<AppUser> SignInManager
+@inject SetupService Setup
+@inject NavigationManager Navigation
+
+<PageTitle>Anmelden – RechnungsWerk</PageTitle>
+
+<section class="auth-card">
+    <h1>Anmelden</h1>
+    <p class="lead">Melde dich an, um Rechnungen zu schreiben und zu versenden.</p>
+
+    @if (Done)
+    {
+        <div class="alert alert-success" role="status">Die Einrichtung ist abgeschlossen. Melde dich jetzt mit deinem neuen Konto an.</div>
+    }
+
+    @if (error is not null)
+    {
+        <div class="alert alert-error" role="alert">@error</div>
+    }
+
+    <EditForm Model="Input" method="post" OnValidSubmit="LoginAsync" FormName="login" novalidate class="form">
+        <ModelValidator />
+        <div class="field">
+            <label for="login-email">E-Mail-Adresse</label>
+            <InputText id="login-email" type="email" @bind-Value="Input.Email" autocomplete="username" />
+            <ValidationMessage For="() => Input.Email" />
+        </div>
+        <div class="field">
+            <label for="login-password">Passwort</label>
+            <InputText id="login-password" type="password" @bind-Value="Input.Password" autocomplete="current-password" />
+            <ValidationMessage For="() => Input.Password" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
+    </EditForm>
+</section>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm(FormName = "login")]
+    private LoginForm Input { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "eingerichtet")]
+    private bool Done { get; set; }
+
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new LoginForm();
+
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            if (await Setup.IsSetupRequiredAsync())
+            {
+                Navigation.NavigateTo("einrichtung");
+                return;
+            }
+
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+        }
+    }
+
+    private async Task LoginAsync()
+    {
+        var result = await SignInManager.PasswordSignInAsync(Input.Email.Trim(), Input.Password, isPersistent: false, lockoutOnFailure: true);
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo(LocalUrl.SafeReturnUrl(ReturnUrl));
+            return;
+        }
+
+        Input.Password = "";
+        error = result.IsLockedOut
+            ? "Zu viele Fehlversuche. Das Konto ist für 15 Minuten gesperrt – versuche es danach noch einmal."
+            : "E-Mail-Adresse oder Passwort stimmen nicht.";
+    }
+
+    private sealed class LoginForm
+    {
+        [Display(Name = "E-Mail-Adresse"), Required(ErrorMessage = "Bitte gib deine E-Mail-Adresse ein.")]
+        public string Email { get; set; } = "";
+
+        [Display(Name = "Passwort"), Required(ErrorMessage = "Bitte gib dein Passwort ein.")]
+        public string Password { get; set; } = "";
+    }
+}

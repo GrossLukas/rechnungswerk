@@ -480,3 +480,9 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# RechnungsWerk: lokale Daten (Datenbank, Schlüssel, Einrichtungscode)
+src/RechnungsWerk.Web/App_Data/
+*.db
+*.db-shm
+*.db-wal

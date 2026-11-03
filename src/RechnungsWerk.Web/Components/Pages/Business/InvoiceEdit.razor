@@ -1,0 +1,389 @@
+@page "/rechnungen/neu"
+@page "/rechnungen/{Id:int}/bearbeiten"
+@rendermode InteractiveServer
+@inject InvoiceService Invoices
+@inject CompanyService Companies
+@inject CustomerService Customers
+@inject ArticleService Articles
+@inject NavigationManager Navigation
+
+<PageTitle>@Title – RechnungsWerk</PageTitle>
+
+@if (loading)
+{
+    <p class="muted" role="status">Wird geladen …</p>
+}
+else if (blocker is not null)
+{
+    <div class="alert alert-warning" role="alert">
+        @blocker
+        @if (blockerLink is { } link)
+        {
+            <a href="@link.Href">@link.Text</a>
+        }
+    </div>
+}
+else
+{
+    <div class="page-header">
+        <div>
+            <p class="eyebrow"><a href="@(Id is null ? "rechnungen" : $"rechnungen/{Id}")">← Zurück</a></p>
+            <h1>@Title</h1>
+            <p class="lead">
+                @(Id is null
+                    ? "Die Rechnungsnummer wird beim Speichern fortlaufend vergeben."
+                    : "Änderungen sind möglich, solange die Rechnung nicht versendet wurde.")
+            </p>
+        </div>
+    </div>
+
+    <EditForm Model="form" OnSubmit="SaveAsync" novalidate class="form form-wide invoice-form">
+        <fieldset class="form-section">
+            <legend>Kunde und Daten</legend>
+            <div class="form-grid">
+                <div class="field span-2">
+                    <label for="invoice-customer">Kunde</label>
+                    <InputSelect id="invoice-customer" Value="form.CustomerId" ValueChanged="(int? id) => SelectCustomer(id)" ValueExpression="() => form.CustomerId">
+                        <option value="">Bitte wählen …</option>
+                        @foreach (var customer in customers)
+                        {
+                            <option value="@customer.Id">@customer.Name</option>
+                        }
+                    </InputSelect>
+                    @if (selectedCustomer is not null)
+                    {
+                        <small class="hint">
+                            @selectedCustomer.Street, @selectedCustomer.PostalCode @selectedCustomer.City
+                            @if (!string.IsNullOrWhiteSpace(selectedCustomer.LeitwegId))
+                            {
+                                <span> · Leitweg-ID @selectedCustomer.LeitwegId</span>
+                            }
+                        </small>
+                    }
+                    @if (customers.Count == 0)
+                    {
+                        <small class="hint">Noch keine Kunden – <a href="kunden/neu">lege zuerst einen Kunden an</a>.</small>
+                    }
+                </div>
+                <div class="field">
+                    <label for="invoice-date">Rechnungsdatum</label>
+                    <InputDate id="invoice-date" @bind-Value="form.IssueDate" />
+                </div>
+                <div class="field">
+                    <label for="invoice-due">Fällig am</label>
+                    <InputDate id="invoice-due" @bind-Value="form.DueDate" />
+                </div>
+                <div class="field span-2">
+                    <span class="label" id="service-mode-label">Leistung</span>
+                    <InputRadioGroup @bind-Value="form.ServiceMode">
+                        <div class="radio-row" role="radiogroup" aria-labelledby="service-mode-label">
+                            <label class="radio"><InputRadio Value="ServiceDateMode.Date" /> <span>an einem Tag</span></label>
+                            <label class="radio"><InputRadio Value="ServiceDateMode.Period" /> <span>über einen Zeitraum</span></label>
+                        </div>
+                    </InputRadioGroup>
+                </div>
+                @if (form.ServiceMode == ServiceDateMode.Date)
+                {
+                    <div class="field">
+                        <label for="invoice-delivery">Leistungsdatum</label>
+                        <InputDate id="invoice-delivery" @bind-Value="form.DeliveryDate" />
+                    </div>
+                }
+                else
+                {
+                    <div class="field">
+                        <label for="invoice-period-start">Leistung von</label>
+                        <InputDate id="invoice-period-start" @bind-Value="form.ServicePeriodStart" />
+                    </div>
+                    <div class="field">
+                        <label for="invoice-period-end">Leistung bis</label>
+                        <InputDate id="invoice-period-end" @bind-Value="form.ServicePeriodEnd" />
+                    </div>
+                }
+            </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+            <legend>Positionen</legend>
+            @if (smallBusiness)
+            {
+                <p class="hint">Als Kleinunternehmer nach § 19 UStG weist du keine Umsatzsteuer aus – der Hinweis kommt automatisch auf die Rechnung.</p>
+            }
+            <ol class="line-list">
+                @for (var i = 0; i < form.Lines.Count; i++)
+                {
+                    var index = i;
+                    var line = form.Lines[index];
+                    <li class="line-card" @key="line">
+                        <div class="line-head">
+                            <strong>Position @(index + 1)</strong>
+                            <button type="button" class="btn btn-ghost btn-sm" @onclick="() => RemoveLine(index)" disabled="@(form.Lines.Count == 1)"
+                                    aria-label="@($"Position {index + 1} entfernen")">Entfernen</button>
+                        </div>
+                        <div class="line-grid">
+                            <div class="field span-full">
+                                <label for="@($"line-name-{index}")">Bezeichnung</label>
+                                <InputText id="@($"line-name-{index}")" @bind-Value="line.Name" />
+                            </div>
+                            <div class="field span-full">
+                                <label for="@($"line-desc-{index}")">Beschreibung <span class="optional">(optional)</span></label>
+                                <InputText id="@($"line-desc-{index}")" @bind-Value="line.Description" />
+                            </div>
+                            <div class="field">
+                                <label for="@($"line-qty-{index}")">Menge</label>
+                                <InputNumber id="@($"line-qty-{index}")" @bind-Value="line.Quantity" step="any" min="0" inputmode="decimal" />
+                            </div>
+                            <div class="field">
+                                <label for="@($"line-unit-{index}")">Einheit</label>
+                                <InputSelect id="@($"line-unit-{index}")" @bind-Value="line.UnitCode">
+                                    @foreach (var (unitCode, unitLabel) in UnitCodes.Common)
+                                    {
+                                        <option value="@unitCode">@unitLabel</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="field">
+                                <label for="@($"line-price-{index}")">Einzelpreis netto (€)</label>
+                                <InputNumber id="@($"line-price-{index}")" @bind-Value="line.UnitPrice" step="any" min="0" inputmode="decimal" />
+                            </div>
+                            @if (!smallBusiness)
+                            {
+                                <div class="field">
+                                    <label for="@($"line-vat-{index}")">Umsatzsteuer</label>
+                                    <InputSelect id="@($"line-vat-{index}")" @bind-Value="line.VatRate">
+                                        @foreach (var rate in VatRates.Allowed)
+                                        {
+                                            <option value="@rate">@rate %</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                            }
+                            <div class="field line-amount">
+                                <span class="label">Betrag netto</span>
+                                <output>@GermanFormat.Money(Money.Round(line.Quantity * line.UnitPrice))</output>
+                            </div>
+                        </div>
+                    </li>
+                }
+            </ol>
+            <div class="line-actions">
+                <button type="button" class="btn btn-secondary" @onclick="AddLine">Position hinzufügen</button>
+                @if (articles.Count > 0)
+                {
+                    <label for="article-pick" class="visually-hidden">Artikel als Position übernehmen</label>
+                    <select id="article-pick" @bind="articlePick" @bind:after="AddArticle">
+                        <option value="">Artikel übernehmen …</option>
+                        @foreach (var article in articles)
+                        {
+                            <option value="@article.Id">@article.Name · @GermanFormat.Money(article.UnitPrice)</option>
+                        }
+                    </select>
+                }
+            </div>
+        </fieldset>
+
+        @if (!smallBusiness && form.Lines.Any(l => l.VatRate == 0))
+        {
+            <fieldset class="form-section">
+                <legend>Steuerbefreiung</legend>
+                <div class="field">
+                    <label for="invoice-exemption">Befreiungsgrund für Positionen mit 0 %</label>
+                    <InputText id="invoice-exemption" @bind-Value="form.TaxExemptionReason" placeholder="z. B. Steuerfrei nach § 4 Nr. 21 UStG" />
+                    <small class="hint">Pflichtangabe – nenne die Vorschrift, nach der die Leistung steuerfrei ist.</small>
+                </div>
+            </fieldset>
+        }
+
+        <fieldset class="form-section">
+            <legend>Weitere Angaben</legend>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="invoice-buyer-ref">Käuferreferenz <span class="optional">(optional)</span></label>
+                    <InputText id="invoice-buyer-ref" @bind-Value="form.BuyerReference" />
+                    <small class="hint">Bei Behörden wird automatisch die Leitweg-ID des Kunden verwendet.</small>
+                </div>
+                <div class="field">
+                    <label for="invoice-order-ref">Bestellnummer <span class="optional">(optional)</span></label>
+                    <InputText id="invoice-order-ref" @bind-Value="form.OrderReference" />
+                </div>
+                <div class="field span-2">
+                    <label for="invoice-terms">Zahlungsbedingungen</label>
+                    <InputText id="invoice-terms" @bind-Value="form.PaymentTerms" placeholder="@InvoiceService.DefaultPaymentTerms(form.DueDate)" />
+                    <small class="hint">Leer lassen für den Standardtext.</small>
+                </div>
+                <div class="field span-2">
+                    <label for="invoice-note">Hinweis auf der Rechnung <span class="optional">(optional)</span></label>
+                    <InputTextArea id="invoice-note" @bind-Value="form.Note" rows="3" />
+                </div>
+                <div class="field">
+                    <label for="invoice-format">Format für den Versand</label>
+                    <InputSelect id="invoice-format" @bind-Value="form.PreferredFormat">
+                        @foreach (var format in Enum.GetValues<EInvoiceFormat>())
+                        {
+                            <option value="@format">@format.Label()</option>
+                        }
+                    </InputSelect>
+                </div>
+            </div>
+        </fieldset>
+
+        <section class="summary-card" aria-label="Summen">
+            <dl class="totals-list">
+                <div><dt>Summe netto</dt><dd>@GermanFormat.Money(Calculation.LineTotal)</dd></div>
+                @foreach (var tax in Calculation.Taxes)
+                {
+                    <div>
+                        <dt>@(tax.CategoryCode == InvoiceCalculator.Exempt ? "Steuerfrei" : $"Umsatzsteuer {GermanFormat.Percent(tax.Rate)}") auf @GermanFormat.Money(tax.TaxableAmount)</dt>
+                        <dd>@GermanFormat.Money(tax.TaxAmount)</dd>
+                    </div>
+                }
+                <div class="total-due"><dt>Gesamtbetrag</dt><dd>@GermanFormat.Money(Calculation.GrandTotal)</dd></div>
+            </dl>
+        </section>
+
+        <ErrorList Errors="errors" />
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" disabled="@saving">@(saving ? "Wird gespeichert …" : "Rechnung speichern")</button>
+            <a class="btn btn-ghost" href="@(Id is null ? "rechnungen" : $"rechnungen/{Id}")">Abbrechen</a>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private InvoiceForm form = new();
+    private List<Customer> customers = [];
+    private List<Article> articles = [];
+    private Customer? selectedCustomer;
+    private IReadOnlyList<string>? errors;
+    private string? blocker;
+    private (string Href, string Text)? blockerLink;
+    private string? number;
+    private string articlePick = "";
+    private bool smallBusiness;
+    private bool loading = true;
+    private bool saving;
+
+    private string Title => Id is null ? "Neue Rechnung" : $"Rechnung {number} bearbeiten";
+
+    private InvoiceCalculation Calculation =>
+        InvoiceCalculator.Calculate(form.ToItems(smallBusiness), smallBusiness, form.TaxExemptionReason);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        blocker = null;
+        blockerLink = null;
+        var profile = await Companies.GetAsync();
+        if (profile is null)
+        {
+            blocker = "Lege zuerst dein Firmenprofil an.";
+            blockerLink = ("einstellungen/firma", "Zum Firmenprofil");
+            loading = false;
+            return;
+        }
+
+        smallBusiness = profile.IsSmallBusiness;
+        customers = await Customers.ListAsync();
+        articles = await Articles.ListAsync();
+
+        if (Id is { } id)
+        {
+            var invoice = await Invoices.GetAsync(id);
+            if (invoice is null)
+            {
+                blocker = "Diese Rechnung gibt es nicht.";
+                blockerLink = ("rechnungen", "Zur Übersicht");
+            }
+            else if (invoice.IsLocked)
+            {
+                blocker = $"Die Rechnung {invoice.Number} wurde bereits versendet und kann nicht mehr geändert werden.";
+                blockerLink = ($"rechnungen/{invoice.Id}", "Zur Rechnung");
+            }
+            else
+            {
+                form = InvoiceForm.From(invoice);
+                number = invoice.Number;
+            }
+        }
+        else
+        {
+            form = Invoices.NewForm(profile);
+        }
+
+        selectedCustomer = customers.FirstOrDefault(c => c.Id == form.CustomerId);
+        loading = false;
+    }
+
+    private void SelectCustomer(int? id)
+    {
+        form.CustomerId = id;
+        selectedCustomer = customers.FirstOrDefault(c => c.Id == id);
+        if (selectedCustomer is not null && string.IsNullOrWhiteSpace(form.BuyerReference))
+        {
+            form.BuyerReference = selectedCustomer.BuyerReference;
+        }
+
+        if (selectedCustomer is not null && Id is null && !string.IsNullOrWhiteSpace(selectedCustomer.LeitwegId))
+        {
+            // Behörden erwarten in aller Regel XRechnung.
+            form.PreferredFormat = EInvoiceFormat.XRechnungUbl;
+        }
+    }
+
+    private void AddLine() => form.Lines.Add(new InvoiceLineForm { VatRate = smallBusiness ? 0 : 19 });
+
+    private void RemoveLine(int index)
+    {
+        if (form.Lines.Count > 1)
+        {
+            form.Lines.RemoveAt(index);
+        }
+    }
+
+    private void AddArticle()
+    {
+        if (int.TryParse(articlePick, out var articleId) && articles.FirstOrDefault(a => a.Id == articleId) is { } article)
+        {
+            var line = InvoiceLineForm.FromArticle(article);
+            if (smallBusiness)
+            {
+                line.VatRate = 0;
+            }
+
+            // Eine leere Startposition ersetzen statt eine zweite anzuhängen.
+            if (form.Lines is [{ Name: "" or null, UnitPrice: 0 }])
+            {
+                form.Lines.Clear();
+            }
+
+            form.Lines.Add(line);
+        }
+
+        articlePick = "";
+    }
+
+    private async Task SaveAsync()
+    {
+        saving = true;
+        errors = null;
+        try
+        {
+            var result = await Invoices.SaveAsync(form);
+            if (result.Succeeded)
+            {
+                Navigation.NavigateTo($"rechnungen/{result.Id}");
+                return;
+            }
+
+            errors = result.Errors;
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+}

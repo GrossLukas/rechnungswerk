@@ -1,0 +1,156 @@
+@page "/artikel/neu"
+@page "/artikel/{Id:int}"
+@rendermode InteractiveServer
+@inject ArticleService Articles
+@inject NavigationManager Navigation
+
+<PageTitle>@(Id is null ? "Neuer Artikel" : "Artikel bearbeiten") – RechnungsWerk</PageTitle>
+
+@if (loading)
+{
+    <p class="muted" role="status">Wird geladen …</p>
+}
+else if (notFound)
+{
+    <section class="narrow">
+        <h1>Artikel nicht gefunden</h1>
+        <p><a class="btn btn-primary" href="artikel">Zur Artikelliste</a></p>
+    </section>
+}
+else
+{
+    <div class="page-header">
+        <div>
+            <p class="eyebrow"><a href="artikel">← Alle Artikel</a></p>
+            <h1>@(Id is null ? "Neuer Artikel" : title)</h1>
+        </div>
+    </div>
+
+    <EditForm Model="form" OnValidSubmit="SaveAsync" novalidate class="form">
+        <ModelValidator />
+        <fieldset class="form-section">
+            <legend>Artikel</legend>
+            <div class="form-grid">
+                <div class="field span-2">
+                    <label for="article-name">Bezeichnung</label>
+                    <InputText id="article-name" @bind-Value="form.Name" />
+                    <ValidationMessage For="() => form.Name" />
+                </div>
+                <div class="field span-2">
+                    <label for="article-description">Beschreibung <span class="optional">(optional)</span></label>
+                    <InputTextArea id="article-description" @bind-Value="form.Description" rows="2" />
+                    <ValidationMessage For="() => form.Description" />
+                </div>
+                <div class="field">
+                    <label for="article-unit">Einheit</label>
+                    <InputSelect id="article-unit" @bind-Value="form.UnitCode">
+                        @foreach (var (unitCode, unitLabel) in UnitCodes.Common)
+                        {
+                            <option value="@unitCode">@unitLabel (@unitCode)</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => form.UnitCode" />
+                </div>
+                <div class="field">
+                    <label for="article-price">Nettopreis je Einheit (€)</label>
+                    <InputNumber id="article-price" @bind-Value="form.UnitPrice" step="any" min="0" inputmode="decimal" />
+                    <ValidationMessage For="() => form.UnitPrice" />
+                </div>
+                <div class="field">
+                    <label for="article-vat">Umsatzsteuer</label>
+                    <InputSelect id="article-vat" @bind-Value="form.VatRate">
+                        @foreach (var rate in VatRates.Allowed)
+                        {
+                            <option value="@rate">@rate %</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => form.VatRate" />
+                </div>
+            </div>
+        </fieldset>
+
+        <ErrorList Errors="errors" />
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" disabled="@saving">@(saving ? "Wird gespeichert …" : "Artikel speichern")</button>
+            <a class="btn btn-ghost" href="artikel">Abbrechen</a>
+        </div>
+    </EditForm>
+
+    @if (Id is not null)
+    {
+        <section class="danger-zone">
+            <h2>Artikel löschen</h2>
+            <p class="hint">Rechnungen enthalten Kopien der Positionen und bleiben unverändert.</p>
+            @if (!confirmDelete)
+            {
+                <button type="button" class="btn btn-danger-outline" @onclick="() => confirmDelete = true">Artikel löschen …</button>
+            }
+            else
+            {
+                <p>Willst du „@title“ wirklich löschen?</p>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-danger" @onclick="DeleteAsync">Ja, löschen</button>
+                    <button type="button" class="btn btn-ghost" @onclick="() => confirmDelete = false">Abbrechen</button>
+                </div>
+            }
+        </section>
+    }
+}
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private ArticleForm form = new();
+    private string title = "";
+    private IReadOnlyList<string>? errors;
+    private bool loading = true;
+    private bool notFound;
+    private bool saving;
+    private bool confirmDelete;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        if (Id is { } id)
+        {
+            var article = await Articles.GetAsync(id);
+            notFound = article is null;
+            form = article is null ? new ArticleForm() : ArticleForm.From(article);
+            title = article?.Name ?? "";
+        }
+
+        loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        saving = true;
+        try
+        {
+            var result = await Articles.SaveAsync(Id, form);
+            if (result.Succeeded)
+            {
+                Navigation.NavigateTo("artikel");
+                return;
+            }
+
+            errors = result.Errors;
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (Id is { } id)
+        {
+            await Articles.DeleteAsync(id);
+        }
+
+        Navigation.NavigateTo("artikel");
+    }
+}

@@ -1,0 +1,76 @@
+@page "/anzeigen"
+@rendermode InteractiveServer
+@inject EInvoiceReader Reader
+@inject ILogger<ViewInvoice> Logger
+
+<PageTitle>E-Rechnung anzeigen – RechnungsWerk</PageTitle>
+
+<div class="page-header no-print">
+    <div>
+        <h1>E-Rechnung anzeigen</h1>
+        <p class="lead">Lade eine XRechnung oder ZUGFeRD-Datei hoch. Die Datei wird nur im Arbeitsspeicher gelesen und nicht gespeichert.</p>
+    </div>
+    @if (view is not null)
+    {
+        <div class="actions">
+            <button type="button" class="btn btn-primary" data-print>Drucken / als PDF speichern</button>
+            <button type="button" class="btn btn-secondary" @onclick="Reset">Andere Datei</button>
+        </div>
+    }
+</div>
+
+@if (view is null)
+{
+    <UploadBox Id="view-upload" Busy="busy" OnChange="LoadAsync" />
+}
+
+@if (error is not null)
+{
+    <div class="alert alert-error" role="alert">@error</div>
+}
+
+@if (view is not null)
+{
+    <p class="muted no-print">Datei: @fileName</p>
+    <InvoiceViewer View="view" />
+}
+
+@code {
+    private InvoiceView? view;
+    private string? fileName;
+    private string? error;
+    private bool busy;
+
+    private async Task LoadAsync(InputFileChangeEventArgs e)
+    {
+        error = null;
+        busy = true;
+        try
+        {
+            var content = await BrowserFiles.ReadAsync(e.File);
+            view = Reader.Read(content).View;
+            fileName = e.File.Name;
+        }
+        catch (EInvoiceReadException ex)
+        {
+            error = ex.Message;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Fremde Dateien können die Lesebibliotheken an unerwarteten Stellen stolpern lassen – die Sitzung soll weiterlaufen.
+            Logger.LogWarning(ex, "Hochgeladene Datei konnte nicht verarbeitet werden");
+            error = "Die Datei konnte nicht gelesen werden. Ist es wirklich eine XRechnung oder ein ZUGFeRD-PDF?";
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private void Reset()
+    {
+        view = null;
+        fileName = null;
+        error = null;
+    }
+}
