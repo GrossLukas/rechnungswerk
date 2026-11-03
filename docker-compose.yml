@@ -1,0 +1,54 @@
+# RechnungsWerk: Web-App und KoSIT-Validator. Start: docker compose up -d --build
+services:
+  web:
+    build: .
+    image: rechnungswerk-web:local
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      Validator__Url: http://validator:8080/
+      # Hinter einem Reverse Proxy mit HTTPS (empfohlen) einschalten, damit die App das Original-Protokoll kennt:
+      # ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      # Wer den Code verändert und anbietet, verlinkt hier den eigenen Quellcode (AGPL-3.0, Abschnitt 13):
+      # SourceCode__Url: https://example.org/mein-rechnungswerk
+    volumes:
+      - rechnungswerk-data:/data
+    depends_on:
+      - validator
+    networks:
+      - frontend
+      - backend
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  validator:
+    build: docker/validator
+    image: rechnungswerk-validator:local
+    restart: unless-stopped
+    # Kein Port nach außen: Der Validator ist nur für die Web-App im internen Netz erreichbar.
+    expose:
+      - "8080"
+    networks:
+      - backend
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  frontend:
+  backend:
+    # Internes Netz ohne Verbindung nach außen.
+    internal: true
+
+volumes:
+  rechnungswerk-data:
