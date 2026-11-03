@@ -4,51 +4,34 @@
 @inject KositValidatorClient Validator
 @inject ILogger<ValidateInvoice> Logger
 
-<PageTitle>E-Rechnung prüfen – RechnungsWerk</PageTitle>
+<PageTitle>Prüfen – RechnungsWerk</PageTitle>
 
-<div class="page-header no-print">
-    <div>
-        <h1>E-Rechnung offiziell prüfen</h1>
-        <p class="lead">
-            Die Prüfung läuft mit dem KoSIT-Validator und der offiziellen XRechnung-Konfiguration – denselben Regeln,
-            die auch Behörden und Rechnungsportale anwenden. Die Datei wird nicht gespeichert.
-        </p>
-    </div>
-    @if (report is not null)
-    {
-        <div class="actions">
-            <button type="button" class="btn btn-primary" data-print>Bericht drucken</button>
-            <button type="button" class="btn btn-secondary" @onclick="Reset">Andere Datei</button>
-        </div>
-    }
-</div>
+<PageHeader Title="Prüfen">
+    <Action>
+        @if (report is not null)
+        {
+            <button type="button" class="button button-plain" data-print>Drucken</button>
+            <button type="button" class="button button-primary" @onclick="Reset">Andere Datei</button>
+        }
+    </Action>
+</PageHeader>
 
 @if (!Validator.IsConfigured)
 {
-    <div class="alert alert-warning" role="status">
-        Auf diesem Server ist der Prüfdienst nicht eingerichtet (Einstellung <code>Validator:Url</code>).
-        Bitte wende dich an die Person, die RechnungsWerk betreibt.
-    </div>
+    <p class="form-error" role="alert">Der Prüfdienst ist auf diesem Server nicht eingerichtet (Einstellung Validator:Url).</p>
 }
 else if (report is null)
 {
-    <UploadBox Id="validate-upload" Busy="busy" BusyText="Wird geprüft – das dauert ein paar Sekunden …" OnChange="ValidateAsync" />
+    <FormErrors Messages="@(error is null ? null : [error])" />
+    <DropZone Id="validate-upload" Busy="busy" OnChange="ValidateAsync" />
 }
-
-@if (error is not null)
+else
 {
-    <div class="alert alert-error" role="alert">@error</div>
-}
-
-@if (report is not null)
-{
-    <p class="muted">Datei: @fileName</p>
     <ValidationReportView Report="report" />
 }
 
 @code {
     private ValidationReport? report;
-    private string? fileName;
     private string? error;
     private bool busy;
 
@@ -59,7 +42,6 @@ else if (report is null)
         try
         {
             report = await BrowserFiles.ProcessAsync(e.File, content => Validator.ValidateAsync(Reader.ExtractXml(content)));
-            fileName = e.File.Name;
         }
         catch (EInvoiceReadException ex)
         {
@@ -73,7 +55,7 @@ else if (report is null)
         {
             // Fremde Dateien können die Lesebibliotheken an unerwarteten Stellen stolpern lassen – die Sitzung soll weiterlaufen.
             Logger.LogWarning(ex, "Hochgeladene Datei konnte nicht verarbeitet werden");
-            error = "Die Datei konnte nicht gelesen werden. Ist es wirklich eine XRechnung oder ein ZUGFeRD-PDF?";
+            error = "Die Datei ist keine lesbare XRechnung und kein ZUGFeRD-PDF.";
         }
         finally
         {
@@ -84,7 +66,6 @@ else if (report is null)
     private void Reset()
     {
         report = null;
-        fileName = null;
         error = null;
     }
 }

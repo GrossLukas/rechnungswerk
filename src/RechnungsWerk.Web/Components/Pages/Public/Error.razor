@@ -3,15 +3,12 @@
 
 <PageTitle>Fehler – RechnungsWerk</PageTitle>
 
-<section class="narrow">
-    <h1>Da ist etwas schiefgegangen</h1>
-    <p class="lead">Beim Verarbeiten deiner Anfrage ist ein unerwarteter Fehler aufgetreten. Bitte versuche es noch einmal.</p>
-    @if (RequestId is not null)
-    {
-        <p class="muted">Kennung für die Fehlersuche: <code>@RequestId</code></p>
-    }
-    <p><a class="btn btn-primary" href="">Zur Startseite</a></p>
-</section>
+<PageHeader Title="Etwas ist schiefgegangen" />
+<p>Bitte versuche es noch einmal.</p>
+@if (RequestId is not null)
+{
+    <p class="muted mono">@RequestId</p>
+}
 
 @code {
     [CascadingParameter]

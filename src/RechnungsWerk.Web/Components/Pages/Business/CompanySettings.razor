@@ -1,35 +1,23 @@
 @page "/einstellungen/firma"
-@rendermode InteractiveServer
+@rendermode AppRenderModes.Live
 @inject CompanyService Companies
 
-<PageTitle>Firmenprofil – RechnungsWerk</PageTitle>
+<PageTitle>Firma – RechnungsWerk</PageTitle>
 
+<PageHeader Title="Einstellungen" />
 <SettingsNav />
 
-<div class="page-header">
-    <div>
-        <h1>Firmenprofil</h1>
-        <p class="lead">Diese Angaben stehen als Rechnungssteller auf jeder neuen Rechnung. Bereits gespeicherte Rechnungen behalten ihre Angaben.</p>
-    </div>
-</div>
-
-@if (form is null)
+@if (form is not null)
 {
-    <p class="muted" role="status">Wird geladen …</p>
-}
-else
-{
-    <EditForm Model="form" OnValidSubmit="SaveAsync" novalidate class="form form-wide">
+    <EditForm Model="form" OnValidSubmit="SaveAsync" novalidate class="form">
         <ModelValidator />
         <CompanyFields Model="form" />
-
-        @if (saved)
-        {
-            <div class="alert alert-success" role="status">Gespeichert.</div>
-        }
-
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary" disabled="@saving">@(saving ? "Wird gespeichert …" : "Firmenprofil speichern")</button>
+            @if (saved)
+            {
+                <span class="saved" role="status">Gespeichert</span>
+            }
+            <button type="submit" class="button button-primary" disabled="@saving">Speichern</button>
         </div>
     </EditForm>
 }

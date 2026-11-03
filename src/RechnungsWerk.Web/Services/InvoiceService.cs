@@ -66,7 +66,7 @@ public sealed class InvoiceService(IDbContextFactory<AppDbContext> dbFactory, EI
             : null;
         if (form.CustomerId is not null && customer is null)
         {
-            errors.Add("Der gewählte Kunde existiert nicht mehr.");
+            errors.Add(new FieldError(nameof(InvoiceForm.CustomerId), "Den gewählten Kunden gibt es nicht mehr."));
         }
 
         if (errors.Count > 0 || customer is null)
@@ -83,7 +83,7 @@ public sealed class InvoiceService(IDbContextFactory<AppDbContext> dbFactory, EI
                 var number = FormatNumber(profile.InvoiceNumberPrefix, profile.NextInvoiceNumber, form.IssueDate.Year);
                 if (await db.Invoices.AnyAsync(i => i.Number == number, cancellationToken))
                 {
-                    return ServiceResult.Fail($"Die Rechnungsnummer {number} ist schon vergeben. Passe den Nummernkreis im Firmenprofil an.");
+                    return ServiceResult.Fail($"Die Rechnungsnummer {number} ist schon vergeben. Passe den Nummernkreis in den Einstellungen an.");
                 }
 
                 var invoice = new Invoice

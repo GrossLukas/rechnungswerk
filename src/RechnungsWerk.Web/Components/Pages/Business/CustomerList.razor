@@ -1,63 +1,43 @@
 @page "/kunden"
-@rendermode InteractiveServer
+@rendermode AppRenderModes.Live
 @inject CustomerService Customers
 
 <PageTitle>Kunden – RechnungsWerk</PageTitle>
 
-<div class="page-header">
-    <div>
-        <h1>Kunden</h1>
-        <p class="lead">Rechnungsempfänger mit Anschrift, E-Mail und – bei Behörden – Leitweg-ID.</p>
-    </div>
-    <div class="actions">
-        <a class="btn btn-primary" href="kunden/neu">Neuer Kunde</a>
-    </div>
-</div>
+<PageHeader Title="Kunden">
+    <Action>
+        @if (customers is { Count: > 0 })
+        {
+            <a class="button button-primary" href="kunden/neu">Neuer Kunde</a>
+        }
+    </Action>
+</PageHeader>
 
 @if (customers is null)
 {
-    <p class="muted" role="status">Wird geladen …</p>
+    return;
 }
-else if (customers.Count == 0)
+
+@if (customers.Count == 0)
 {
-    <div class="empty-state">
-        <h2>Noch keine Kunden</h2>
-        <p>Lege deinen ersten Kunden an, um ihm eine Rechnung zu schreiben.</p>
-        <a class="btn btn-primary" href="kunden/neu">Kunden anlegen</a>
-    </div>
+    <EmptyState Text="Noch keine Kunden." ActionText="Neuer Kunde" ActionHref="kunden/neu" />
 }
 else
 {
-    <div class="toolbar">
-        <label class="visually-hidden" for="customer-search">Kunden durchsuchen</label>
-        <input id="customer-search" type="search" placeholder="Nach Name, Ort oder E-Mail suchen" @bind="search" @bind:event="oninput" />
-    </div>
-    <div class="table-wrap">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Ort</th>
-                    <th scope="col">E-Mail</th>
-                    <th scope="col">Leitweg-ID</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var customer in Filtered)
-                {
-                    <tr>
-                        <td><a href="@($"kunden/{customer.Id}")"><strong>@customer.Name</strong></a></td>
-                        <td>@customer.PostalCode @customer.City</td>
-                        <td>@customer.Email</td>
-                        <td class="mono">@customer.LeitwegId</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+    <input type="search" class="search" aria-label="Kunden durchsuchen" placeholder="Suchen" @bind="search" @bind:event="oninput" />
+    <ul class="list" role="list">
+        @foreach (var customer in Filtered)
+        {
+            <ListRow Href="@($"kunden/{customer.Id}")" Title="@customer.Name" Detail="@($"{customer.PostalCode} {customer.City}")">
+                <Trailing>
+                    <span class="row-detail">@(customer.LeitwegId ?? customer.Email)</span>
+                </Trailing>
+            </ListRow>
+        }
+    </ul>
     @if (!Filtered.Any())
     {
-        <p class="muted">Kein Kunde passt zu „@search“.</p>
+        <p class="muted">Keine Treffer.</p>
     }
 }
 

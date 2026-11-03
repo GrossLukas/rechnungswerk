@@ -4,82 +4,52 @@
 @inject SetupCodeStore SetupCode
 @inject NavigationManager Navigation
 
-<PageTitle>Einrichtung – RechnungsWerk</PageTitle>
+<PageTitle>Einrichten – RechnungsWerk</PageTitle>
 
 @if (loading)
 {
-    <p class="muted" role="status">Wird geladen …</p>
+    <PageHeader Title="Einrichten" />
 }
 else if (!setupRequired)
 {
-    <section class="narrow">
-        <h1>Bereits eingerichtet</h1>
-        <p class="lead">RechnungsWerk ist schon eingerichtet. Melde dich mit deinem Konto an.</p>
-        <p><a class="btn btn-primary" href="anmelden">Zur Anmeldung</a></p>
-    </section>
+    <PageHeader Title="Bereits eingerichtet" />
+    <EmptyState Text="Melde dich mit deinem Konto an." ActionText="Anmelden" ActionHref="anmelden" />
 }
 else
 {
-    <div class="page-header">
-        <div>
-            <h1>RechnungsWerk einrichten</h1>
-            <p class="lead">Lege dein Konto und dein Firmenprofil an. Die Angaben erscheinen später auf deinen Rechnungen und lassen sich jederzeit ändern.</p>
-        </div>
-    </div>
+    <PageHeader Title="Einrichten" />
 
-    <EditForm Model="form" OnValidSubmit="CompleteAsync" novalidate class="form form-wide">
+    <EditForm Model="form" OnValidSubmit="CompleteAsync" novalidate class="form">
         <ModelValidator Include="[form.Company]" />
-        <ErrorList Errors="errors" />
 
-        <fieldset class="form-section">
-            <legend>Einrichtungscode</legend>
-            <p class="hint">
-                Damit niemand sonst deine frisch gestartete Instanz übernehmen kann, liegt ein einmaliger Code im Datenordner
-                (Datei <code>setup-code.txt</code>). Mit Docker zeigst du ihn so an:
-                <code>docker compose exec web cat /data/setup-code.txt</code>
-            </p>
-            <div class="form-grid">
-                <div class="field span-2">
-                    <label for="setup-code">Einrichtungscode</label>
-                    <InputText id="setup-code" @bind-Value="form.SetupCode" autocomplete="off" spellcheck="false" class="mono" />
-                    <ValidationMessage For="() => form.SetupCode" />
-                </div>
-            </div>
-        </fieldset>
-
-        <fieldset class="form-section">
-            <legend>Dein Zugang</legend>
-            <div class="form-grid">
-                <div class="field span-2">
-                    <label for="setup-email">E-Mail-Adresse für die Anmeldung</label>
-                    <InputText id="setup-email" type="email" @bind-Value="form.Email" autocomplete="username" />
-                    <ValidationMessage For="() => form.Email" />
-                </div>
-                <div class="field">
-                    <label for="setup-password">Passwort</label>
-                    <InputText id="setup-password" type="password" @bind-Value="form.Password" autocomplete="new-password" aria-describedby="setup-password-hint" />
-                    <small id="setup-password-hint" class="hint">Mindestens 12 Zeichen mit mindestens einer Ziffer und einem Kleinbuchstaben.</small>
-                    <ValidationMessage For="() => form.Password" />
-                </div>
-                <div class="field">
-                    <label for="setup-confirm">Passwort wiederholen</label>
-                    <InputText id="setup-confirm" type="password" @bind-Value="form.ConfirmPassword" autocomplete="new-password" />
-                    <ValidationMessage For="() => form.ConfirmPassword" />
-                </div>
-            </div>
+        <fieldset class="section">
+            <legend>Zugang</legend>
+            <Field Label="Einrichtungscode" For="() => form.SetupCode" Error="@result?.ErrorFor(nameof(SetupForm.SetupCode))">
+                <InputText @bind-Value="form.SetupCode" autocomplete="off" spellcheck="false" class="mono" />
+            </Field>
+            <Field Label="E-Mail" For="() => form.Email" Error="@result?.ErrorFor(nameof(SetupForm.Email))">
+                <InputText type="email" @bind-Value="form.Email" autocomplete="username" />
+            </Field>
+            <Field Label="Passwort" For="() => form.Password" Error="@result?.ErrorFor(nameof(SetupForm.Password))">
+                <InputText type="password" @bind-Value="form.Password" autocomplete="new-password" />
+            </Field>
+            <Field Label="Passwort wiederholen" For="() => form.ConfirmPassword">
+                <InputText type="password" @bind-Value="form.ConfirmPassword" autocomplete="new-password" />
+            </Field>
         </fieldset>
 
         <CompanyFields Model="form.Company" />
 
+        <FormErrors Messages="result?.GeneralErrors" />
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary" disabled="@saving">@(saving ? "Wird eingerichtet …" : "Einrichtung abschließen")</button>
+            <button type="submit" class="button button-primary" disabled="@saving">Einrichten</button>
         </div>
     </EditForm>
 }
 
 @code {
     private readonly SetupForm form = new();
-    private IReadOnlyList<string>? errors;
+    private ServiceResult? result;
     private bool loading = true;
     private bool setupRequired;
     private bool saving;
@@ -89,7 +59,7 @@ else
         setupRequired = await Setup.IsSetupRequiredAsync();
         if (setupRequired)
         {
-            // Nach einem Neustart ohne Code-Datei (z. B. gelöscht) wird ein neuer Code angelegt.
+            // Wurde die Code-Datei gelöscht, entsteht hier ein neuer Code.
             SetupCode.EnsureCreated();
         }
 
@@ -99,17 +69,14 @@ else
     private async Task CompleteAsync()
     {
         saving = true;
-        errors = null;
+        result = null;
         try
         {
-            var result = await Setup.CompleteAsync(form);
+            result = await Setup.CompleteAsync(form);
             if (result.Succeeded)
             {
-                Navigation.NavigateTo("anmelden?eingerichtet=true", forceLoad: true);
-                return;
+                Navigation.NavigateTo("anmelden", forceLoad: true);
             }
-
-            errors = result.Errors;
         }
         finally
         {

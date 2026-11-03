@@ -1,43 +1,16 @@
 @page "/"
 @inject SetupService Setup
+@inject NavigationManager Navigation
 
-<PageTitle>RechnungsWerk – E-Rechnungen anzeigen, prüfen und schreiben</PageTitle>
-
-<section class="hero">
-    <h1>E-Rechnungen einfach im Griff</h1>
-    <p class="lead">
-        Öffne XRechnung und ZUGFeRD, prüfe sie mit dem offiziellen Validator und schreibe eigene E-Rechnungen –
-        alles auf deinem eigenen Server.
-    </p>
-    @if (setupRequired)
-    {
-        <div class="alert alert-info">
-            <p><strong>Willkommen!</strong> RechnungsWerk ist noch nicht eingerichtet. Lege jetzt dein Konto und dein Firmenprofil an.</p>
-            <p><a class="btn btn-primary" href="einrichtung">Jetzt einrichten</a></p>
-        </div>
-    }
-</section>
-
-<div class="feature-grid">
-    <a class="feature-card" href="anzeigen">
-        <h2>Anzeigen &amp; Drucken</h2>
-        <p>Mach aus einer E-Rechnung eine gut lesbare Ansicht – zum Prüfen, Ablegen oder Drucken. Ohne Anmeldung, nichts wird gespeichert.</p>
-        <span class="feature-link">Rechnung öffnen →</span>
-    </a>
-    <a class="feature-card" href="pruefen">
-        <h2>Offiziell prüfen</h2>
-        <p>Prüfe XRechnung und ZUGFeRD mit dem KoSIT-Validator und erhalte jeden Fehler mit verständlicher Erklärung.</p>
-        <span class="feature-link">Rechnung prüfen →</span>
-    </a>
-    <a class="feature-card" href="@(setupRequired ? "einrichtung" : "rechnungen")">
-        <h2>Rechnungen schreiben</h2>
-        <p>Kunden und Artikel anlegen, Rechnungen erstellen und als XRechnung oder ZUGFeRD-PDF herunterladen oder per E-Mail senden.</p>
-        <span class="feature-link">@(setupRequired ? "Einrichten →" : "Zu deinen Rechnungen →")</span>
-    </a>
-</div>
-
+@* Kein Startbildschirm: direkt dorthin, wo die Arbeit wartet. *@
 @code {
-    private bool setupRequired;
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
 
-    protected override async Task OnInitializedAsync() => setupRequired = await Setup.IsSetupRequiredAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        var signedIn = AuthenticationState is not null && (await AuthenticationState).User.Identity?.IsAuthenticated == true;
+        var target = await Setup.IsSetupRequiredAsync() ? "einrichtung" : signedIn ? "rechnungen" : "anzeigen";
+        Navigation.NavigateTo(target);
+    }
 }

@@ -83,8 +83,18 @@ public sealed class WebSecurityTests(RechnungsWerkAppFactory factory) : IClassFi
         Assert.Equal("/anmelden", response.Headers.Location!.IsAbsoluteUri ? response.Headers.Location.AbsolutePath : response.Headers.Location.OriginalString.Split('?')[0]);
     }
 
+    [Fact]
+    public async Task Start_page_leads_to_the_setup_while_setup_is_pending()
+    {
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        using var response = await client.GetAsync("/", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.EndsWith("/einrichtung", response.Headers.Location!.OriginalString, StringComparison.Ordinal);
+    }
+
     [Theory]
-    [InlineData("/")]
     [InlineData("/anzeigen")]
     [InlineData("/pruefen")]
     [InlineData("/einrichtung")]

@@ -71,7 +71,7 @@ nicht direkt nach außen frei.
 
 ### E-Mail-Versand (SMTP)
 
-Den SMTP-Zugang trägst du nach der Anmeldung unter **Einstellungen → E-Mail-Versand** ein. Das Passwort wird mit
+Den SMTP-Zugang trägst du nach der Anmeldung unter **Einstellungen → Versand** ein. Das Passwort wird mit
 ASP.NET Core DataProtection verschlüsselt gespeichert und nie wieder angezeigt. Mit „Testmail senden“ prüfst du die
 Angaben, bevor die erste Rechnung rausgeht.
 

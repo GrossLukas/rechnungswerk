@@ -42,8 +42,16 @@ ZUGFeRD arbeitest, lass sie bitte vor dem Pull Request laufen.
 
 ## Regeln für die Oberfläche
 
+- Leitbild: so klar wie Apple Notes. Vollbild mit Seitenleiste, große Seitentitel, eine Hauptaktion je Seite,
+  Listen statt Tabellen, Formulare einspaltig mit kurzen Labels über dem Feld und „Speichern“ unten rechts
+  (auch mit Strg/Cmd+Enter).
+- Keine Untertitel, Hilfetexte oder erklärenden Platzhalter. Braucht ein Bildschirm Erklärungen, stimmt das Layout
+  nicht. Leere Zustände: eine Zeile und eine Hauptaktion.
+- Alle Stile stehen in `wwwroot/app.css` und nutzen die Design-Tokens (CSS-Variablen) für Farben, Abstände, Radien
+  und Schrift – Hell- und Dunkelmodus inklusive. Wiederkehrendes gehört in die Bausteine unter
+  `Components/Shared` (`PageHeader`, `ListRow`, `Field`, `EmptyState`, `DropZone` …), nicht in neue CSS-Klassen.
 - Deutsch, du-Form, echte Umlaute („Prüfen“, nicht „Pruefen“) – nur in Adressen (URLs) stehen Umschreibungen.
-- Fehlermeldungen sagen, was passiert ist und was man tun kann.
+- Fehlermeldungen erscheinen nur bei echten Fehlern, direkt am Feld, und sagen, was man tun kann.
 - Jede Seite mit Firmendaten liegt in `Components/Pages/Business` und ist damit nur nach Anmeldung erreichbar; ein
   Test prüft das für alle Seiten.
 - Keine Inline-Skripte und keine Inline-Stile – die Content-Security-Policy blockiert sie.

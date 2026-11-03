@@ -6,46 +6,43 @@
 
 <PageTitle>Konto – RechnungsWerk</PageTitle>
 
+<PageHeader Title="Einstellungen" />
 <SettingsNav />
 
-<div class="page-header">
-    <div>
-        <h1>Konto</h1>
-        <p class="lead">Angemeldet als <strong>@email</strong>.</p>
+<EditForm Model="Input" method="post" OnSubmit="ChangePasswordAsync" FormName="change-password" novalidate class="form">
+    <ModelValidator />
+    <fieldset class="section">
+        <legend>Konto</legend>
+        <div class="field">
+            <label>
+                <span class="field-label">E-Mail</span>
+                <input type="email" value="@email" readonly />
+            </label>
+        </div>
+        <Field Label="Aktuelles Passwort" For="() => Input.CurrentPassword" Error="@currentPasswordError">
+            <InputText type="password" @bind-Value="Input.CurrentPassword" autocomplete="current-password" />
+        </Field>
+        <Field Label="Neues Passwort" For="() => Input.NewPassword" Error="@newPasswordError">
+            <InputText type="password" @bind-Value="Input.NewPassword" autocomplete="new-password" />
+        </Field>
+        <Field Label="Neues Passwort wiederholen" For="() => Input.ConfirmPassword">
+            <InputText type="password" @bind-Value="Input.ConfirmPassword" autocomplete="new-password" />
+        </Field>
+    </fieldset>
+    <div class="form-actions">
+        @if (changed)
+        {
+            <span class="saved" role="status">Passwort geändert</span>
+        }
+        <button type="submit" class="button button-primary">Passwort ändern</button>
     </div>
-</div>
+</EditForm>
 
-<section class="card narrow-card">
-    <h2>Passwort ändern</h2>
-
-    @if (changed)
-    {
-        <div class="alert alert-success" role="status">Dein Passwort wurde geändert. Andere Sitzungen werden abgemeldet.</div>
-    }
-
-    <ErrorList Errors="errors" />
-
-    <EditForm Model="Input" method="post" OnSubmit="ChangePasswordAsync" FormName="change-password" novalidate class="form">
-        <ModelValidator />
-        <div class="field">
-            <label for="current-password">Bisheriges Passwort</label>
-            <InputText id="current-password" type="password" @bind-Value="Input.CurrentPassword" autocomplete="current-password" />
-            <ValidationMessage For="() => Input.CurrentPassword" />
-        </div>
-        <div class="field">
-            <label for="new-password">Neues Passwort</label>
-            <InputText id="new-password" type="password" @bind-Value="Input.NewPassword" autocomplete="new-password" aria-describedby="new-password-hint" />
-            <small id="new-password-hint" class="hint">Mindestens 12 Zeichen mit mindestens einer Ziffer und einem Kleinbuchstaben.</small>
-            <ValidationMessage For="() => Input.NewPassword" />
-        </div>
-        <div class="field">
-            <label for="confirm-password">Neues Passwort wiederholen</label>
-            <InputText id="confirm-password" type="password" @bind-Value="Input.ConfirmPassword" autocomplete="new-password" />
-            <ValidationMessage For="() => Input.ConfirmPassword" />
-        </div>
-        <button type="submit" class="btn btn-primary">Passwort ändern</button>
-    </EditForm>
-</section>
+@* Auf schmalen Bildschirmen gibt es keine Seitenleiste – dort wird hier abgemeldet. *@
+<form action="abmelden" method="post" class="mobile-only form-actions">
+    <AntiforgeryToken />
+    <button type="submit" class="button button-secondary">Abmelden</button>
+</form>
 
 @code {
     [CascadingParameter]
@@ -55,7 +52,8 @@
     private PasswordForm Input { get; set; } = default!;
 
     private string? email;
-    private IReadOnlyList<string>? errors;
+    private string? currentPasswordError;
+    private string? newPasswordError;
     private bool changed;
 
     protected override async Task OnInitializedAsync()
@@ -76,14 +74,15 @@
             var user = await UserManager.GetUserAsync(HttpContext.User);
             if (user is null)
             {
-                errors = ["Dein Konto wurde nicht gefunden. Bitte melde dich neu an."];
+                currentPasswordError = "Dein Konto wurde nicht gefunden. Bitte melde dich neu an.";
                 return;
             }
 
             var result = await UserManager.ChangePasswordAsync(user, Input.CurrentPassword, Input.NewPassword);
             if (!result.Succeeded)
             {
-                errors = result.Errors.Select(e => e.Description).ToList();
+                currentPasswordError = string.Join(" ", result.Errors.Where(e => e.Code == nameof(IdentityErrorDescriber.PasswordMismatch)).Select(e => e.Description));
+                newPasswordError = string.Join(" ", result.Errors.Where(e => e.Code != nameof(IdentityErrorDescriber.PasswordMismatch)).Select(e => e.Description));
                 return;
             }
 
@@ -101,7 +100,7 @@
 
     private sealed class PasswordForm
     {
-        [Display(Name = "Bisheriges Passwort"), Required(ErrorMessage = "Bitte gib dein bisheriges Passwort ein.")]
+        [Display(Name = "Aktuelles Passwort"), Required(ErrorMessage = "Bitte gib dein aktuelles Passwort ein.")]
         public string CurrentPassword { get; set; } = "";
 
         [Display(Name = "Neues Passwort"), Required(ErrorMessage = "Bitte gib ein neues Passwort ein."), StringLength(200, ErrorMessage = "Das Passwort ist zu lang.")]

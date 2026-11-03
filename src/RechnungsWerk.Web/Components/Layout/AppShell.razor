@@ -1,0 +1,16 @@
+@inherits LayoutComponentBase
+
+<a class="skip-link" href="#main">Zum Inhalt springen</a>
+
+<div class="shell">
+    <Sidebar />
+    <main id="main" class="content">
+        @Body
+    </main>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet role="alert">
+    Es ist ein Fehler aufgetreten.
+    <a href="." class="reload">Neu laden</a>
+    <button type="button" class="dismiss" aria-label="Schließen">✕</button>
+</div>

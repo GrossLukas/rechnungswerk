@@ -7,14 +7,29 @@ using RechnungsWerk.Web.Data;
 
 namespace RechnungsWerk.Web.Services;
 
+/// <summary>Eine Meldung zu einem Formularfeld; ohne Feld gilt sie für das ganze Formular.</summary>
+public sealed record FieldError(string? Field, string Message);
+
 /// <summary>Ergebnis einer Aktion mit verständlichen Fehlermeldungen für die Oberfläche.</summary>
-public sealed record ServiceResult(bool Succeeded, IReadOnlyList<string> Errors, int? Id = null)
+public sealed record ServiceResult(bool Succeeded, IReadOnlyList<FieldError> Problems, int? Id = null)
 {
+    public IReadOnlyList<string> Errors => Problems.Select(p => p.Message).ToList();
+
+    /// <summary>Meldungen ohne Feldbezug, z. B. „Diese Rechnung gibt es nicht mehr“.</summary>
+    public IReadOnlyList<string> GeneralErrors => Problems.Where(p => p.Field is null).Select(p => p.Message).ToList();
+
+    public string? ErrorFor(string field) =>
+        Problems.Where(p => p.Field == field).Select(p => p.Message).FirstOrDefault();
+
     public static ServiceResult Ok(int? id = null) => new(true, [], id);
 
-    public static ServiceResult Fail(params string[] errors) => new(false, errors);
+    public static ServiceResult Fail(params string[] errors) => new(false, errors.Select(e => new FieldError(null, e)).ToList());
 
-    public static ServiceResult Fail(IEnumerable<string> errors) => new(false, errors.ToList());
+    public static ServiceResult Fail(IEnumerable<string> errors) => new(false, errors.Select(e => new FieldError(null, e)).ToList());
+
+    public static ServiceResult Fail(IEnumerable<FieldError> problems) => new(false, problems.ToList());
+
+    public static ServiceResult FailAt(string field, string message) => new(false, [new FieldError(field, message)]);
 }
 
 internal static partial class FormRules
@@ -332,84 +347,96 @@ public sealed class InvoiceForm
             VatRate = smallBusiness ? 0m : l.VatRate,
         });
 
-    /// <summary>Fachliche Prüfung vor dem Speichern; liefert verständliche Meldungen.</summary>
-    public List<string> Validate(bool smallBusiness)
+    /// <summary>Fachliche Prüfung vor dem Speichern; jede Meldung gehört zu einem Feld (Schlüssel wie „Lines[0].Name“).</summary>
+    public List<FieldError> Validate(bool smallBusiness)
     {
-        var errors = new List<string>();
+        var errors = new List<FieldError>();
+        void Add(string field, string message) => errors.Add(new FieldError(field, message));
+
         if (CustomerId is null)
         {
-            errors.Add("Bitte wähle einen Kunden aus.");
+            Add(nameof(CustomerId), "Bitte wähle einen Kunden.");
         }
 
         if (ServiceMode == ServiceDateMode.Date && DeliveryDate is null)
         {
-            errors.Add("Bitte gib das Leistungsdatum an.");
+            Add(nameof(DeliveryDate), "Bitte gib das Leistungsdatum an.");
         }
 
         if (ServiceMode == ServiceDateMode.Period)
         {
             if (ServicePeriodStart is null || ServicePeriodEnd is null)
             {
-                errors.Add("Bitte gib Beginn und Ende des Leistungszeitraums an.");
+                Add(nameof(ServicePeriodStart), "Bitte gib Beginn und Ende der Leistung an.");
             }
             else if (ServicePeriodStart > ServicePeriodEnd)
             {
-                errors.Add("Der Leistungszeitraum endet vor seinem Beginn.");
+                Add(nameof(ServicePeriodEnd), "Das Ende liegt vor dem Beginn.");
             }
         }
 
         if (DueDate is { } due && due < IssueDate)
         {
-            errors.Add("Die Fälligkeit liegt vor dem Rechnungsdatum.");
+            Add(nameof(DueDate), "Die Fälligkeit liegt vor dem Rechnungsdatum.");
         }
 
         if (Lines.Count == 0)
         {
-            errors.Add("Die Rechnung braucht mindestens eine Position.");
+            Add(nameof(Lines), "Die Rechnung braucht mindestens eine Position.");
         }
 
         for (var i = 0; i < Lines.Count; i++)
         {
             var line = Lines[i];
-            var label = $"Position {i + 1}";
+            var prefix = $"{nameof(Lines)}[{i}].";
             if (string.IsNullOrWhiteSpace(line.Name))
             {
-                errors.Add($"{label}: Bitte gib eine Bezeichnung ein.");
+                Add(prefix + nameof(line.Name), "Bitte gib eine Bezeichnung ein.");
             }
             else if (line.Name.Trim().Length > 200)
             {
-                errors.Add($"{label}: Die Bezeichnung darf höchstens 200 Zeichen lang sein.");
+                Add(prefix + nameof(line.Name), "Die Bezeichnung darf höchstens 200 Zeichen lang sein.");
             }
 
             if (line.Quantity <= 0 || line.Quantity > 1_000_000_000m || decimal.Round(line.Quantity, 4) != line.Quantity)
             {
-                errors.Add($"{label}: Die Menge muss größer als 0 sein und darf höchstens vier Nachkommastellen haben.");
+                Add(prefix + nameof(line.Quantity), "Die Menge muss größer als 0 sein (höchstens vier Nachkommastellen).");
             }
 
             if (line.UnitPrice < 0 || line.UnitPrice > 999_999_999m || decimal.Round(line.UnitPrice, 4) != line.UnitPrice)
             {
-                errors.Add($"{label}: Der Preis darf nicht negativ sein und höchstens vier Nachkommastellen haben.");
+                Add(prefix + nameof(line.UnitPrice), "Der Preis darf nicht negativ sein (höchstens vier Nachkommastellen).");
             }
 
             if (!UnitCodes.IsKnown(line.UnitCode))
             {
-                errors.Add($"{label}: Bitte wähle eine Einheit aus der Liste.");
+                Add(prefix + nameof(line.UnitCode), "Bitte wähle eine Einheit aus der Liste.");
             }
 
             if (!smallBusiness && !VatRates.IsAllowed(line.VatRate))
             {
-                errors.Add($"{label}: Bitte wähle 19 %, 7 % oder 0 % Umsatzsteuer.");
+                Add(prefix + nameof(line.VatRate), "Bitte wähle 19 %, 7 % oder 0 %.");
             }
         }
 
         if (!smallBusiness && Lines.Any(l => l.VatRate == 0) && FormRules.Clean(TaxExemptionReason) is null)
         {
-            errors.Add("Für Positionen mit 0 % Umsatzsteuer brauchst du einen Befreiungsgrund, z. B. „Steuerfrei nach § 4 Nr. 21 UStG“.");
+            Add(nameof(TaxExemptionReason), "Für 0 % Umsatzsteuer brauchst du einen Befreiungsgrund, z. B. „Steuerfrei nach § 4 Nr. 21 UStG“.");
         }
 
-        if (Note?.Length > 2000 || PaymentTerms?.Length > 500 || BuyerReference?.Length > 100 || OrderReference?.Length > 100 || TaxExemptionReason?.Length > 300)
+        foreach (var (field, value, max) in new[]
+                 {
+                     (nameof(Note), Note, 2000),
+                     (nameof(PaymentTerms), PaymentTerms, 500),
+                     (nameof(BuyerReference), BuyerReference, 100),
+                     (nameof(OrderReference), OrderReference, 100),
+                     (nameof(TaxExemptionReason), TaxExemptionReason, 300),
+                 })
         {
-            errors.Add("Ein Textfeld ist zu lang. Bitte kürze Hinweise, Zahlungsbedingungen oder Referenzen.");
+            if (value?.Length > max)
+            {
+                Add(field, $"Höchstens {max} Zeichen.");
+            }
         }
 
         return errors;

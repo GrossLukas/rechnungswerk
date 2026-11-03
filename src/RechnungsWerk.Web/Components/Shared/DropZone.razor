@@ -1,0 +1,19 @@
+@* Die ganze Inhaltsfläche nimmt die Datei an – hineinziehen oder klicken. *@
+<div class="dropzone @(Busy ? "is-busy" : null)">
+    <InputFile id="@Id" OnChange="OnChange" disabled="@Busy" accept=".xml,.pdf,application/xml,text/xml,application/pdf" />
+    <label for="@Id">
+        <Icon Name="upload" />
+        <span>@(Busy ? "Wird gelesen …" : "E-Rechnung hierher ziehen oder klicken")</span>
+    </label>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Id { get; set; } = "";
+
+    [Parameter]
+    public bool Busy { get; set; }
+
+    [Parameter]
+    public EventCallback<InputFileChangeEventArgs> OnChange { get; set; }
+}

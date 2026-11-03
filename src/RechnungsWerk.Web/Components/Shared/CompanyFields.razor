@@ -1,140 +1,56 @@
-@* Eingabefelder des Firmenprofils – genutzt in der Ersteinrichtung und in den Einstellungen. *@
-<fieldset class="form-section">
-    <legend>Deine Firma</legend>
-    <div class="form-grid">
-        <div class="field span-2">
-            <label for="company-name">Firmenname</label>
-            <InputText id="company-name" @bind-Value="Model.Name" autocomplete="organization" />
-            <ValidationMessage For="() => Model.Name" />
-        </div>
-        <div class="field span-2">
-            <label for="company-street">Straße und Hausnummer</label>
-            <InputText id="company-street" @bind-Value="Model.Street" autocomplete="street-address" />
-            <ValidationMessage For="() => Model.Street" />
-        </div>
-        <div class="field">
-            <label for="company-postal">PLZ</label>
-            <InputText id="company-postal" @bind-Value="Model.PostalCode" autocomplete="postal-code" inputmode="numeric" />
-            <ValidationMessage For="() => Model.PostalCode" />
-        </div>
-        <div class="field">
-            <label for="company-city">Ort</label>
-            <InputText id="company-city" @bind-Value="Model.City" autocomplete="address-level2" />
-            <ValidationMessage For="() => Model.City" />
-        </div>
-        <div class="field">
-            <label for="company-country">Land</label>
-            <InputText id="company-country" @bind-Value="Model.CountryCode" maxlength="2" aria-describedby="company-country-hint" />
-            <small id="company-country-hint" class="hint">Zweistelliger Code, z. B. DE oder AT.</small>
-            <ValidationMessage For="() => Model.CountryCode" />
-        </div>
+@* Felder des Firmenprofils – in der Ersteinrichtung und in den Einstellungen. *@
+<fieldset class="section">
+    <legend>Firma</legend>
+    <Field Label="Name" For="() => Model.Name"><InputText @bind-Value="Model.Name" autocomplete="organization" /></Field>
+    <Field Label="Straße" For="() => Model.Street"><InputText @bind-Value="Model.Street" autocomplete="street-address" /></Field>
+    <div class="field-row">
+        <Field Label="PLZ" For="() => Model.PostalCode"><InputText @bind-Value="Model.PostalCode" autocomplete="postal-code" inputmode="numeric" /></Field>
+        <Field Label="Ort" For="() => Model.City"><InputText @bind-Value="Model.City" autocomplete="address-level2" /></Field>
     </div>
+    <Field Label="Land" For="() => Model.CountryCode"><InputText @bind-Value="Model.CountryCode" maxlength="2" autocomplete="country" /></Field>
 </fieldset>
 
-<fieldset class="form-section">
-    <legend>Steuern</legend>
-    <div class="form-grid">
-        <div class="field">
-            <label for="company-vatid">USt-IdNr.</label>
-            <InputText id="company-vatid" @bind-Value="Model.VatId" placeholder="DE123456789" />
-            <ValidationMessage For="() => Model.VatId" />
-        </div>
-        <div class="field">
-            <label for="company-taxnumber">Steuernummer</label>
-            <InputText id="company-taxnumber" @bind-Value="Model.TaxNumber" placeholder="12/345/67890" />
-            <ValidationMessage For="() => Model.TaxNumber" />
-        </div>
-        <div class="field span-2">
-            <label class="checkbox">
-                <InputCheckbox @bind-Value="Model.IsSmallBusiness" />
-                <span>Kleinunternehmer nach § 19 UStG – ich weise keine Umsatzsteuer aus.</span>
-            </label>
-        </div>
-    </div>
+<fieldset class="section">
+    <legend>Steuer</legend>
+    <Field Label="USt-IdNr." For="() => Model.VatId"><InputText @bind-Value="Model.VatId" /></Field>
+    <Field Label="Steuernummer" For="() => Model.TaxNumber"><InputText @bind-Value="Model.TaxNumber" /></Field>
+    <label class="check">
+        <InputCheckbox @bind-Value="Model.IsSmallBusiness" />
+        <span>Kleinunternehmer (§ 19 UStG)</span>
+    </label>
 </fieldset>
 
-<fieldset class="form-section">
-    <legend>Kontakt für Rückfragen</legend>
-    <p class="hint">Die XRechnung verlangt eine Ansprechperson mit Telefon und E-Mail.</p>
-    <div class="form-grid">
-        <div class="field span-2">
-            <label for="company-contact">Ansprechperson</label>
-            <InputText id="company-contact" @bind-Value="Model.ContactName" autocomplete="name" />
-            <ValidationMessage For="() => Model.ContactName" />
-        </div>
-        <div class="field">
-            <label for="company-phone">Telefon</label>
-            <InputText id="company-phone" type="tel" @bind-Value="Model.Phone" autocomplete="tel" />
-            <ValidationMessage For="() => Model.Phone" />
-        </div>
-        <div class="field">
-            <label for="company-email">E-Mail</label>
-            <InputText id="company-email" type="email" @bind-Value="Model.Email" autocomplete="email" />
-            <ValidationMessage For="() => Model.Email" />
-        </div>
-    </div>
+<fieldset class="section">
+    <legend>Kontakt</legend>
+    <Field Label="Ansprechperson" For="() => Model.ContactName"><InputText @bind-Value="Model.ContactName" autocomplete="name" /></Field>
+    <Field Label="Telefon" For="() => Model.Phone"><InputText type="tel" @bind-Value="Model.Phone" autocomplete="tel" /></Field>
+    <Field Label="E-Mail" For="() => Model.Email"><InputText type="email" @bind-Value="Model.Email" autocomplete="email" /></Field>
 </fieldset>
 
-<fieldset class="form-section">
-    <legend>Bankverbindung</legend>
-    <div class="form-grid">
-        <div class="field span-2">
-            <label for="company-iban">IBAN</label>
-            <InputText id="company-iban" @bind-Value="Model.Iban" placeholder="DE02 1203 0000 0000 2020 51" autocomplete="off" />
-            <ValidationMessage For="() => Model.Iban" />
-        </div>
-        <div class="field">
-            <label for="company-bic">BIC</label>
-            <InputText id="company-bic" @bind-Value="Model.Bic" autocomplete="off" />
-            <ValidationMessage For="() => Model.Bic" />
-        </div>
-        <div class="field">
-            <label for="company-bank">Bank</label>
-            <InputText id="company-bank" @bind-Value="Model.BankName" />
-            <ValidationMessage For="() => Model.BankName" />
-        </div>
-    </div>
+<fieldset class="section">
+    <legend>Bank</legend>
+    <Field Label="IBAN" For="() => Model.Iban"><InputText @bind-Value="Model.Iban" autocomplete="off" spellcheck="false" /></Field>
+    <Field Label="BIC" For="() => Model.Bic"><InputText @bind-Value="Model.Bic" autocomplete="off" spellcheck="false" /></Field>
+    <Field Label="Bank" For="() => Model.BankName"><InputText @bind-Value="Model.BankName" /></Field>
 </fieldset>
 
-@if (ShowInvoiceDefaults)
-{
-    <fieldset class="form-section">
-        <legend>Rechnungen</legend>
-        <div class="form-grid">
-            <div class="field">
-                <label for="company-prefix">Vorsatz der Rechnungsnummer</label>
-                <InputText id="company-prefix" @bind-Value="Model.InvoiceNumberPrefix" aria-describedby="company-prefix-hint" />
-                <small id="company-prefix-hint" class="hint">{Jahr} wird durch das Jahr ersetzt. Beispiel: @InvoiceService.FormatNumber(Model.InvoiceNumberPrefix, Model.NextInvoiceNumber, DateTime.Today.Year)</small>
-                <ValidationMessage For="() => Model.InvoiceNumberPrefix" />
-            </div>
-            <div class="field">
-                <label for="company-next">Nächste laufende Nummer</label>
-                <InputNumber id="company-next" @bind-Value="Model.NextInvoiceNumber" min="1" />
-                <ValidationMessage For="() => Model.NextInvoiceNumber" />
-            </div>
-            <div class="field">
-                <label for="company-days">Zahlungsziel in Tagen</label>
-                <InputNumber id="company-days" @bind-Value="Model.DefaultPaymentDays" min="0" max="365" />
-                <ValidationMessage For="() => Model.DefaultPaymentDays" />
-            </div>
-            <div class="field">
-                <label for="company-format">Standardformat</label>
-                <InputSelect id="company-format" @bind-Value="Model.DefaultFormat">
-                    @foreach (var format in Enum.GetValues<EInvoiceFormat>())
-                    {
-                        <option value="@format">@format.Label()</option>
-                    }
-                </InputSelect>
-                <ValidationMessage For="() => Model.DefaultFormat" />
-            </div>
-        </div>
-    </fieldset>
-}
+<fieldset class="section">
+    <legend>Rechnungen</legend>
+    <Field Label="Nummer beginnt mit" For="() => Model.InvoiceNumberPrefix"><InputText @bind-Value="Model.InvoiceNumberPrefix" spellcheck="false" /></Field>
+    <Field Label="Nächste Nummer" For="() => Model.NextInvoiceNumber"><InputNumber @bind-Value="Model.NextInvoiceNumber" min="1" /></Field>
+    <p class="preview" aria-live="polite">@InvoiceService.FormatNumber(Model.InvoiceNumberPrefix, Model.NextInvoiceNumber, DateTime.Today.Year)</p>
+    <Field Label="Zahlungsziel (Tage)" For="() => Model.DefaultPaymentDays"><InputNumber @bind-Value="Model.DefaultPaymentDays" min="0" max="365" /></Field>
+    <Field Label="Format" For="() => Model.DefaultFormat">
+        <InputSelect @bind-Value="Model.DefaultFormat">
+            @foreach (var format in Enum.GetValues<EInvoiceFormat>())
+            {
+                <option value="@format">@format.Label()</option>
+            }
+        </InputSelect>
+    </Field>
+</fieldset>
 
 @code {
     [Parameter, EditorRequired]
     public CompanyForm Model { get; set; } = default!;
-
-    [Parameter]
-    public bool ShowInvoiceDefaults { get; set; } = true;
 }

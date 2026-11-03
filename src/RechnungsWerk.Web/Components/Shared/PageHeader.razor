@@ -1,0 +1,16 @@
+@* Seitentitel mit höchstens einer Hauptaktion rechts. *@
+<header class="page-header">
+    <h1>@Title</h1>
+    @if (Action is not null)
+    {
+        <div class="page-action no-print">@Action</div>
+    }
+</header>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = "";
+
+    [Parameter]
+    public RenderFragment? Action { get; set; }
+}

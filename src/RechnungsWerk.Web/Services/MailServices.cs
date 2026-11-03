@@ -147,6 +147,8 @@ public sealed class InvoiceMailService(
     SmtpMailSender sender,
     TimeProvider time)
 {
+    public const string RecipientField = "Recipient";
+
     private static readonly EmailAddressAttribute EmailCheck = new();
 
     public async Task<ServiceResult> SendInvoiceAsync(int invoiceId, EInvoiceFormat format, string? recipient, CancellationToken cancellationToken = default)
@@ -154,13 +156,13 @@ public sealed class InvoiceMailService(
         var to = recipient?.Trim();
         if (string.IsNullOrEmpty(to) || !EmailCheck.IsValid(to))
         {
-            return ServiceResult.Fail("Bitte gib eine gültige Empfängeradresse ein.");
+            return ServiceResult.FailAt(RecipientField, "Bitte gib eine gültige Empfängeradresse ein.");
         }
 
         var settings = await smtpSettings.LoadAsync(cancellationToken);
         if (settings is null)
         {
-            return ServiceResult.Fail("Richte zuerst den E-Mail-Versand ein (Einstellungen → E-Mail-Versand).");
+            return ServiceResult.Fail("Richte zuerst den Versand ein (Einstellungen → Versand).");
         }
 
         var invoice = await invoices.GetAsync(invoiceId, cancellationToken);
@@ -202,7 +204,7 @@ public sealed class InvoiceMailService(
         var to = recipient?.Trim();
         if (string.IsNullOrEmpty(to) || !EmailCheck.IsValid(to))
         {
-            return ServiceResult.Fail("Bitte gib eine gültige Adresse für die Testmail ein.");
+            return ServiceResult.FailAt(RecipientField, "Bitte gib eine gültige Adresse ein.");
         }
 
         try

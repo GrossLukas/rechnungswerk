@@ -50,7 +50,7 @@ public sealed class SetupService(
 
             if (!setupCode.Matches(form.SetupCode))
             {
-                return ServiceResult.Fail("Der Einrichtungscode stimmt nicht. Du findest ihn in der Datei setup-code.txt im Datenordner.");
+                return ServiceResult.FailAt(nameof(SetupForm.SetupCode), "Der Code stimmt nicht. Er steht in der Datei setup-code.txt im Datenordner.");
             }
 
             // Erst das Firmenprofil (beliebig oft wiederholbar), dann das Konto – so bleibt nie ein Konto ohne Profil zurück.
@@ -61,7 +61,9 @@ public sealed class SetupService(
             var created = await userManager.CreateAsync(user, form.Password);
             if (!created.Succeeded)
             {
-                return ServiceResult.Fail(created.Errors.Select(e => e.Description));
+                // Passwortregeln am Passwortfeld zeigen, alles andere (z. B. doppelte Adresse) an der E-Mail.
+                return ServiceResult.Fail(created.Errors.Select(e => new FieldError(
+                    e.Code.StartsWith("Password", StringComparison.Ordinal) ? nameof(SetupForm.Password) : nameof(SetupForm.Email), e.Description)));
             }
 
             setupCode.Delete();

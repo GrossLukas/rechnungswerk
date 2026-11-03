@@ -1,8 +1,7 @@
-@* Gut lesbare Darstellung einer E-Rechnung – auch zum Drucken bzw. „Als PDF speichern“. *@
-<article class="invoice-sheet" aria-label="Rechnung @View.Number">
+@* Lesbare Darstellung einer E-Rechnung – auch für den Ausdruck. *@
+<article class="invoice-sheet @(TitleOnlyInPrint ? "title-print-only" : null)" aria-label="Rechnung @View.Number">
     <header class="invoice-head">
         <div>
-            <p class="eyebrow">@View.FormatLabel@(View.FromPdf ? " · aus PDF gelesen" : null)</p>
             <h2 class="invoice-title">@View.TypeLabel @View.Number</h2>
         </div>
         <dl class="meta-list">
@@ -134,7 +133,7 @@
             </div>
         </section>
 
-        <section class="invoice-section totals" aria-label="Summen">
+        <section class="invoice-section" aria-label="Summen">
             <h3>Summen</h3>
             <dl class="totals-list">
                 @Total("Summe der Positionen", View.Totals.LineTotal)
@@ -248,6 +247,10 @@
 @code {
     [Parameter, EditorRequired]
     public InvoiceView View { get; set; } = default!;
+
+    /// <summary>Wenn der Seitentitel schon die Nummer zeigt, steht die Überschrift nur im Ausdruck.</summary>
+    [Parameter]
+    public bool TitleOnlyInPrint { get; set; }
 
     private RenderFragment Party(string title, PartyView party) =>
         @<section class="party">

@@ -1,0 +1,10 @@
+@* Fehler ohne Feldbezug – erscheinen nur, wenn es wirklich welche gibt. *@
+@foreach (var message in Messages ?? [])
+{
+    <p class="form-error" role="alert">@message</p>
+}
+
+@code {
+    [Parameter]
+    public IEnumerable<string>? Messages { get; set; }
+}

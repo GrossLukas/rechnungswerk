@@ -1,56 +1,39 @@
 @page "/artikel"
-@rendermode InteractiveServer
+@rendermode AppRenderModes.Live
 @inject ArticleService Articles
 
 <PageTitle>Artikel – RechnungsWerk</PageTitle>
 
-<div class="page-header">
-    <div>
-        <h1>Artikel</h1>
-        <p class="lead">Wiederkehrende Leistungen und Produkte – übernimm sie mit einem Klick in eine Rechnung.</p>
-    </div>
-    <div class="actions">
-        <a class="btn btn-primary" href="artikel/neu">Neuer Artikel</a>
-    </div>
-</div>
+<PageHeader Title="Artikel">
+    <Action>
+        @if (articles is { Count: > 0 })
+        {
+            <a class="button button-primary" href="artikel/neu">Neuer Artikel</a>
+        }
+    </Action>
+</PageHeader>
 
 @if (articles is null)
 {
-    <p class="muted" role="status">Wird geladen …</p>
+    return;
 }
-else if (articles.Count == 0)
+
+@if (articles.Count == 0)
 {
-    <div class="empty-state">
-        <h2>Noch keine Artikel</h2>
-        <p>Artikel sind optional – Positionen kannst du auch frei eintippen.</p>
-        <a class="btn btn-primary" href="artikel/neu">Artikel anlegen</a>
-    </div>
+    <EmptyState Text="Noch keine Artikel." ActionText="Neuer Artikel" ActionHref="artikel/neu" />
 }
 else
 {
-    <div class="table-wrap">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th scope="col">Bezeichnung</th>
-                    <th scope="col">Einheit</th>
-                    <th scope="col" class="num">Nettopreis</th>
-                    <th scope="col" class="num">USt</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var article in articles)
-                {
-                    <tr>
-                        <td><a href="@($"artikel/{article.Id}")"><strong>@article.Name</strong></a></td>
-                        <td>@UnitCodes.Label(article.UnitCode)</td>
-                        <td class="num">@GermanFormat.UnitPrice(article.UnitPrice)</td>
-                        <td class="num">@GermanFormat.Percent(article.VatRate)</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+    <ul class="list" role="list">
+        @foreach (var article in articles)
+        {
+            <ListRow Href="@($"artikel/{article.Id}")" Title="@article.Name" Detail="@($"{UnitCodes.Label(article.UnitCode)} · {GermanFormat.Percent(article.VatRate)} USt")">
+                <Trailing>
+                    <span class="amount">@GermanFormat.UnitPrice(article.UnitPrice)</span>
+                </Trailing>
+            </ListRow>
+        }
+    </ul>
 }
 
 @code {

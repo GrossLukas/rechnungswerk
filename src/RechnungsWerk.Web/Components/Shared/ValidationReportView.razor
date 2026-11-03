@@ -1,60 +1,35 @@
 @* Ergebnis der offiziellen Prüfung durch den KoSIT-Validator. *@
 <section class="report" aria-live="polite">
-    <div class="verdict @(Report.IsAcceptable ? "verdict-ok" : "verdict-fail")">
-        <span class="verdict-icon" aria-hidden="true">@(Report.IsAcceptable ? "✓" : "✕")</span>
-        <div>
-            <p class="verdict-title">
-                @(Report.IsAcceptable ? "Gültig – die Rechnung erfüllt die Vorgaben." : "Nicht gültig – die Rechnung erfüllt die Vorgaben nicht.")
-            </p>
-            <p class="verdict-sub">
-                Prüfszenario: @(Report.ScenarioName ?? "keines gefunden")
-                · @Report.ErrorCount Fehler
-                · @Report.WarningCount @(Report.WarningCount == 1 ? "Warnung" : "Warnungen")
-            </p>
-        </div>
-    </div>
+    <p class="verdict @(Report.IsAcceptable ? "verdict-ok" : "verdict-fail")">
+        <span aria-hidden="true">@(Report.IsAcceptable ? "✓" : "✕")</span>
+        @(Report.IsAcceptable ? "Gültig" : "Nicht gültig")
+    </p>
 
     @if (!Report.ScenarioMatched)
     {
-        <p class="alert alert-warning">
-            Für diese Datei gibt es kein passendes Prüfszenario. Geprüft werden XRechnung (UBL und CII) und das Profil
-            EN 16931 (ZUGFeRD/Factur-X „Comfort“). Andere Profile wie ZUGFeRD MINIMUM, BASIC WL, BASIC oder EXTENDED kann der
-            Validator nicht bewerten – MINIMUM und BASIC WL gelten in Deutschland ohnehin nicht als E-Rechnung.
+        <p class="form-error">
+            Kein passendes Prüfszenario: Geprüft werden XRechnung (UBL, CII) und ZUGFeRD/Factur-X im Profil EN 16931.
+            Die Profile MINIMUM und BASIC WL gelten in Deutschland nicht als E-Rechnung.
         </p>
     }
 
-    @if (Report.Steps.Count > 0)
+    @if (Report.Messages.Count > 0)
     {
-        <ul class="step-list">
-            @foreach (var step in Report.Steps)
-            {
-                <li class="@(step.Valid ? "step-ok" : "step-fail")">
-                    <span aria-hidden="true">@(step.Valid ? "✓" : "✕")</span>
-                    @step.Name
-                    <span class="visually-hidden">@(step.Valid ? "bestanden" : "nicht bestanden")</span>
-                </li>
-            }
-        </ul>
-    }
-
-    @foreach (var group in Groups)
-    {
-        <h3>@group.Title (@group.Messages.Count)</h3>
         <ol class="findings">
-            @foreach (var message in group.Messages)
+            @foreach (var message in Report.Messages.OrderBy(m => m.Level))
             {
-                <li class="finding finding-@group.Css">
-                    <p class="finding-head">
+                <li class="finding finding-@Css(message.Level)">
+                    <p class="finding-title">
                         @if (!string.IsNullOrWhiteSpace(message.RuleId))
                         {
                             <span class="rule-id">@message.RuleId</span>
                         }
-                        <span>@message.Explanation</span>
+                        @message.Explanation
                     </p>
                     <p class="finding-text">@message.Text</p>
                     @if (!string.IsNullOrWhiteSpace(message.Location))
                     {
-                        <p class="finding-location">Fundstelle: <code>@message.Location</code></p>
+                        <p class="finding-text mono">@message.Location</p>
                     }
                 </li>
             }
@@ -66,23 +41,10 @@
     [Parameter, EditorRequired]
     public ValidationReport Report { get; set; } = default!;
 
-    private IEnumerable<(string Title, string Css, IReadOnlyList<ValidationMessage> Messages)> Groups
+    private static string Css(ValidationLevel level) => level switch
     {
-        get
-        {
-            foreach (var (level, title, css) in new[]
-                     {
-                         (ValidationLevel.Error, "Fehler", "error"),
-                         (ValidationLevel.Warning, "Warnungen", "warning"),
-                         (ValidationLevel.Information, "Hinweise", "info"),
-                     })
-            {
-                var messages = Report.Messages.Where(m => m.Level == level).ToList();
-                if (messages.Count > 0)
-                {
-                    yield return (title, css, messages);
-                }
-            }
-        }
-    }
+        ValidationLevel.Error => "error",
+        ValidationLevel.Warning => "warning",
+        _ => "info",
+    };
 }

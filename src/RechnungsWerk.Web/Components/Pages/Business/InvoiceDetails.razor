@@ -1,5 +1,5 @@
 @page "/rechnungen/{Id:int}"
-@rendermode InteractiveServer
+@rendermode AppRenderModes.Live
 @inject InvoiceService Invoices
 @inject InvoiceMailService Mail
 @inject EInvoiceReader Reader
@@ -7,151 +7,130 @@
 @inject NavigationManager Navigation
 @inject ILogger<InvoiceDetails> Logger
 
-<PageTitle>Rechnung @invoice?.Number – RechnungsWerk</PageTitle>
+<PageTitle>@(invoice?.Number ?? "Rechnung") – RechnungsWerk</PageTitle>
 
 @if (loading)
 {
-    <p class="muted" role="status">Wird geladen …</p>
+    return;
 }
-else if (invoice is null)
-{
-    <section class="narrow">
-        <h1>Rechnung nicht gefunden</h1>
-        <p class="lead">Diese Rechnung gibt es nicht (mehr).</p>
-        <p><a class="btn btn-primary" href="rechnungen">Zur Übersicht</a></p>
-    </section>
-}
-else
-{
-    <div class="page-header no-print">
-        <div>
-            <p class="eyebrow"><a href="rechnungen">← Alle Rechnungen</a></p>
-            <h1>Rechnung @invoice.Number</h1>
-            <p class="lead">@invoice.CustomerName · @GermanFormat.Money(invoice.GrandTotal, invoice.Currency) · <InvoiceStatus Invoice="invoice" /></p>
-        </div>
-        <div class="actions">
-            @if (!invoice.IsLocked)
-            {
-                <a class="btn btn-secondary" href="@($"rechnungen/{invoice.Id}/bearbeiten")">Bearbeiten</a>
-            }
-            <button type="button" class="btn btn-secondary" data-print>Drucken</button>
-        </div>
-    </div>
 
-    <div class="card-grid no-print">
-        <section class="card">
-            <h2>Herunterladen</h2>
-            <ul class="download-list">
-                @foreach (var format in Enum.GetValues<EInvoiceFormat>())
+@if (invoice is null)
+{
+    <PageHeader Title="Rechnung nicht gefunden" />
+    <EmptyState Text="Diese Rechnung gibt es nicht mehr." ActionText="Zu den Rechnungen" ActionHref="rechnungen" />
+    return;
+}
+
+<PageHeader Title="@invoice.Number">
+    <Action>
+        @if (!sendOpen)
+        {
+            <button type="button" class="button button-primary" @onclick="OpenSend">@(invoice.SentAt is null ? "Senden" : "Erneut senden")</button>
+        }
+    </Action>
+</PageHeader>
+
+<div class="toolbar no-print">
+    @if (!invoice.IsLocked)
+    {
+        <a class="button button-plain" href="@($"rechnungen/{invoice.Id}/bearbeiten")">Bearbeiten</a>
+    }
+    @foreach (var format in Enum.GetValues<EInvoiceFormat>())
+    {
+        <a class="button button-plain" href="@($"rechnungen/{invoice.Id}/datei/{format}")" download data-enhance-nav="false">@ShortLabel(format)</a>
+    }
+    @if (Validator.IsConfigured)
+    {
+        <button type="button" class="button button-plain" @onclick="ValidateAllAsync" disabled="@checking">Prüfen</button>
+    }
+    <button type="button" class="button button-plain" data-print>Drucken</button>
+    @if (!invoice.IsLocked)
+    {
+        @if (confirmDelete)
+        {
+            <span class="confirm">
+                <button type="button" class="button button-danger" @onclick="DeleteAsync">Wirklich löschen</button>
+                <button type="button" class="button button-plain" @onclick="() => confirmDelete = false">Abbrechen</button>
+            </span>
+        }
+        else
+        {
+            <button type="button" class="button button-plain button-danger-text" @onclick="() => confirmDelete = true">Löschen</button>
+        }
+    }
+</div>
+
+@if (invoice.SentAt is not null)
+{
+    <p class="status-line no-print"><span class="status status-done">Versendet</span> @Display.Timestamp(invoice.SentAt) an @invoice.SentTo · @invoice.SentFormat?.Label()</p>
+}
+
+@if (sendOpen)
+{
+    <section class="panel no-print" aria-label="Rechnung senden">
+        <div class="field-row">
+            <div class="field">
+                <label>
+                    <span class="field-label">An</span>
+                    <input type="email" @bind="recipient" autocomplete="email" />
+                </label>
+                @if (sendResult?.ErrorFor(InvoiceMailService.RecipientField) is { } recipientError)
                 {
-                    <li>
-                        <a class="btn btn-secondary btn-block" href="@($"rechnungen/{invoice.Id}/datei/{format}")" download data-enhance-nav="false">@format.Label()</a>
-                        <small class="hint">@format.Hint()</small>
-                    </li>
+                    <p class="field-error" role="alert">@recipientError</p>
                 }
-            </ul>
-        </section>
-
-        <section class="card">
-            <h2>Per E-Mail senden</h2>
-            @if (invoice.SentAt is not null)
-            {
-                <p class="alert alert-success" role="status">Versendet am @Display.Timestamp(invoice.SentAt) an @invoice.SentTo (@invoice.SentFormat?.Label()).</p>
-            }
-            @if (sendError is not null)
-            {
-                <p class="alert alert-error" role="alert">@sendError</p>
-            }
-            else if (invoice.LastMailError is not null)
-            {
-                <p class="alert alert-error" role="alert">Versuch am @Display.Timestamp(invoice.LastMailAttemptAt) fehlgeschlagen: @invoice.LastMailError</p>
-            }
-            <div class="field">
-                <label for="send-to">Empfänger</label>
-                <input id="send-to" type="email" @bind="recipient" autocomplete="email" />
             </div>
             <div class="field">
-                <label for="send-format">Format im Anhang</label>
-                <select id="send-format" @bind="sendFormat">
-                    @foreach (var format in Enum.GetValues<EInvoiceFormat>())
-                    {
-                        <option value="@format">@format.Label()</option>
-                    }
-                </select>
-            </div>
-            @if (!invoice.IsLocked)
-            {
-                <p class="hint">Nach dem Versand ist die Rechnung festgeschrieben und lässt sich nicht mehr bearbeiten.</p>
-            }
-            <button type="button" class="btn btn-primary" @onclick="SendAsync" disabled="@sending">
-                @(sending ? "Wird gesendet …" : invoice.SentAt is null ? "Rechnung senden" : "Erneut senden")
-            </button>
-        </section>
-
-        <section class="card">
-            <h2>Offiziell prüfen</h2>
-            <p class="hint">Prüft die erzeugte Datei mit dem KoSIT-Validator, bevor du sie verschickst.</p>
-            @if (Validator.IsConfigured)
-            {
-                <div class="field">
-                    <label for="check-format">Format</label>
-                    <select id="check-format" @bind="checkFormat">
+                <label>
+                    <span class="field-label">Format</span>
+                    <select @bind="sendFormat">
                         @foreach (var format in Enum.GetValues<EInvoiceFormat>())
                         {
                             <option value="@format">@format.Label()</option>
                         }
                     </select>
-                </div>
-                <button type="button" class="btn btn-secondary" @onclick="ValidateAsync" disabled="@checking">@(checking ? "Wird geprüft …" : "Jetzt prüfen")</button>
-            }
-            else
+                </label>
+            </div>
+        </div>
+        <FormErrors Messages="sendResult?.GeneralErrors" />
+        <div class="form-actions">
+            <button type="button" class="button button-plain" @onclick="() => sendOpen = false">Abbrechen</button>
+            <button type="button" class="button button-primary" @onclick="SendAsync" disabled="@sending">@(sending ? "Wird gesendet …" : "Senden")</button>
+        </div>
+    </section>
+}
+else if (invoice.LastMailError is not null && invoice.SentAt is null)
+{
+    <p class="form-error no-print" role="alert">@invoice.LastMailError</p>
+}
+
+@if (checkError is not null)
+{
+    <p class="form-error no-print" role="alert">@checkError</p>
+}
+
+@if (reports.Count > 0)
+{
+    <section class="checks no-print" aria-label="Prüfergebnis">
+        <ul class="list" role="list">
+            @foreach (var (format, report) in reports)
             {
-                <p class="alert alert-warning">Der Prüfdienst ist auf diesem Server nicht eingerichtet (Einstellung <code>Validator:Url</code>).</p>
+                <li class="check-row">
+                    <span>@format.Label()</span>
+                    <span class="status @(report.IsAcceptable ? "status-done" : "status-error")">@(report.IsAcceptable ? "Gültig" : "Nicht gültig")</span>
+                </li>
             }
-        </section>
-    </div>
-
-    @if (checkError is not null)
-    {
-        <div class="alert alert-error no-print" role="alert">@checkError</div>
-    }
-
-    @if (report is not null)
-    {
-        <section class="card no-print">
-            <h2>Prüfergebnis: @checkedFormat?.Label()</h2>
+        </ul>
+        @foreach (var (format, report) in reports.Where(r => !r.Value.IsAcceptable || r.Value.WarningCount > 0))
+        {
+            <h2 class="section-title">@format.Label()</h2>
             <ValidationReportView Report="report" />
-        </section>
-    }
+        }
+    </section>
+}
 
-    <h2 class="section-title no-print">So sieht der Empfänger die Rechnung</h2>
-    @if (preview is not null)
-    {
-        <InvoiceViewer View="preview" />
-    }
-    else if (previewError is not null)
-    {
-        <div class="alert alert-warning">@previewError</div>
-    }
-
-    @if (!invoice.IsLocked)
-    {
-        <section class="danger-zone no-print">
-            <h2>Rechnung löschen</h2>
-            @if (!confirmDelete)
-            {
-                <button type="button" class="btn btn-danger-outline" @onclick="() => confirmDelete = true">Rechnung löschen …</button>
-            }
-            else
-            {
-                <p>Willst du die Rechnung @invoice.Number wirklich löschen? Die Nummer wird nicht erneut vergeben.</p>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-danger" @onclick="DeleteAsync">Ja, endgültig löschen</button>
-                    <button type="button" class="btn btn-ghost" @onclick="() => confirmDelete = false">Abbrechen</button>
-                </div>
-            }
-        </section>
-    }
+@if (preview is not null)
+{
+    <InvoiceViewer View="preview" TitleOnlyInPrint="true" />
 }
 
 @code {
@@ -160,15 +139,13 @@ else
 
     private Invoice? invoice;
     private InvoiceView? preview;
-    private string? previewError;
-    private ValidationReport? report;
-    private EInvoiceFormat? checkedFormat;
+    private readonly Dictionary<EInvoiceFormat, ValidationReport> reports = [];
+    private ServiceResult? sendResult;
     private string? checkError;
     private string? recipient;
-    private string? sendError;
     private EInvoiceFormat sendFormat;
-    private EInvoiceFormat checkFormat;
     private bool loading = true;
+    private bool sendOpen;
     private bool sending;
     private bool checking;
     private bool confirmDelete;
@@ -177,15 +154,15 @@ else
     {
         loading = true;
         await LoadAsync();
-        if (invoice is not null)
-        {
-            recipient = invoice.Buyer.Email;
-            sendFormat = invoice.PreferredFormat;
-            checkFormat = invoice.PreferredFormat;
-        }
-
         loading = false;
     }
+
+    private static string ShortLabel(EInvoiceFormat format) => format switch
+    {
+        EInvoiceFormat.XRechnungUbl => "XRechnung UBL",
+        EInvoiceFormat.XRechnungCii => "XRechnung CII",
+        _ => "ZUGFeRD-PDF",
+    };
 
     private async Task LoadAsync()
     {
@@ -197,31 +174,32 @@ else
 
         try
         {
-            // Vorschau aus der erzeugten XRechnung – so wie sie beim Empfänger ankommt.
+            // Vorschau aus der erzeugten XRechnung – so, wie sie beim Empfänger ankommt.
             preview = Reader.Read(Invoices.Render(invoice, EInvoiceFormat.XRechnungUbl).Content).View;
-            previewError = null;
         }
         catch (Exception ex) when (ex is EInvoiceReadException or InvalidOperationException or ArgumentException)
         {
             Logger.LogWarning(ex, "Vorschau für Rechnung {InvoiceId} konnte nicht erzeugt werden", Id);
             preview = null;
-            previewError = "Die Vorschau konnte nicht erzeugt werden. Prüfe die Rechnung mit „Jetzt prüfen“.";
         }
+    }
+
+    private void OpenSend()
+    {
+        recipient ??= invoice?.Buyer.Email;
+        sendFormat = invoice?.SentFormat ?? invoice?.PreferredFormat ?? EInvoiceFormat.XRechnungUbl;
+        sendResult = null;
+        sendOpen = true;
     }
 
     private async Task SendAsync()
     {
-        if (invoice is null)
-        {
-            return;
-        }
-
         sending = true;
         try
         {
-            var result = await Mail.SendInvoiceAsync(invoice.Id, sendFormat, recipient);
-            sendError = result.Succeeded ? null : string.Join(" ", result.Errors);
+            sendResult = await Mail.SendInvoiceAsync(Id, sendFormat, recipient);
             await LoadAsync();
+            sendOpen = !sendResult.Succeeded;
         }
         finally
         {
@@ -229,7 +207,7 @@ else
         }
     }
 
-    private async Task ValidateAsync()
+    private async Task ValidateAllAsync()
     {
         if (invoice is null)
         {
@@ -238,18 +216,16 @@ else
 
         checking = true;
         checkError = null;
-        report = null;
+        reports.Clear();
         try
         {
-            var file = Invoices.Render(invoice, checkFormat);
-            report = await Validator.ValidateAsync(Reader.ExtractXml(file.Content));
-            checkedFormat = checkFormat;
+            foreach (var format in Enum.GetValues<EInvoiceFormat>())
+            {
+                var file = Invoices.Render(invoice, format);
+                reports[format] = await Validator.ValidateAsync(Reader.ExtractXml(file.Content));
+            }
         }
         catch (ValidatorUnavailableException ex)
-        {
-            checkError = ex.Message;
-        }
-        catch (EInvoiceReadException ex)
         {
             checkError = ex.Message;
         }
@@ -269,6 +245,6 @@ else
         }
 
         confirmDelete = false;
-        previewError = string.Join(" ", result.Errors);
+        checkError = string.Join(" ", result.Errors);
     }
 }

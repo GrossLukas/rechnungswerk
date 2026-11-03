@@ -8,35 +8,17 @@
 
 <PageTitle>Anmelden – RechnungsWerk</PageTitle>
 
-<section class="auth-card">
-    <h1>Anmelden</h1>
-    <p class="lead">Melde dich an, um Rechnungen zu schreiben und zu versenden.</p>
+<PageHeader Title="Anmelden" />
 
-    @if (Done)
-    {
-        <div class="alert alert-success" role="status">Die Einrichtung ist abgeschlossen. Melde dich jetzt mit deinem neuen Konto an.</div>
-    }
-
-    @if (error is not null)
-    {
-        <div class="alert alert-error" role="alert">@error</div>
-    }
-
-    <EditForm Model="Input" method="post" OnValidSubmit="LoginAsync" FormName="login" novalidate class="form">
-        <ModelValidator />
-        <div class="field">
-            <label for="login-email">E-Mail-Adresse</label>
-            <InputText id="login-email" type="email" @bind-Value="Input.Email" autocomplete="username" />
-            <ValidationMessage For="() => Input.Email" />
-        </div>
-        <div class="field">
-            <label for="login-password">Passwort</label>
-            <InputText id="login-password" type="password" @bind-Value="Input.Password" autocomplete="current-password" />
-            <ValidationMessage For="() => Input.Password" />
-        </div>
-        <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
-    </EditForm>
-</section>
+<EditForm Model="Input" method="post" OnValidSubmit="LoginAsync" FormName="login" novalidate class="form">
+    <ModelValidator />
+    <Field Label="E-Mail" For="() => Input.Email"><InputText type="email" @bind-Value="Input.Email" autocomplete="username" /></Field>
+    <Field Label="Passwort" For="() => Input.Password"><InputText type="password" @bind-Value="Input.Password" autocomplete="current-password" /></Field>
+    <FormErrors Messages="@(error is null ? null : [error])" />
+    <div class="form-actions">
+        <button type="submit" class="button button-primary">Anmelden</button>
+    </div>
+</EditForm>
 
 @code {
     [CascadingParameter]
@@ -47,9 +29,6 @@
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
-
-    [SupplyParameterFromQuery(Name = "eingerichtet")]
-    private bool Done { get; set; }
 
     private string? error;
 
@@ -78,15 +57,16 @@
             return;
         }
 
+        // Passwörter nie zurück in die Seite schreiben.
         Input.Password = "";
         error = result.IsLockedOut
-            ? "Zu viele Fehlversuche. Das Konto ist für 15 Minuten gesperrt – versuche es danach noch einmal."
-            : "E-Mail-Adresse oder Passwort stimmen nicht.";
+            ? "Zu viele Fehlversuche. Das Konto ist für 15 Minuten gesperrt."
+            : "E-Mail oder Passwort stimmen nicht.";
     }
 
     private sealed class LoginForm
     {
-        [Display(Name = "E-Mail-Adresse"), Required(ErrorMessage = "Bitte gib deine E-Mail-Adresse ein.")]
+        [Display(Name = "E-Mail"), Required(ErrorMessage = "Bitte gib deine E-Mail-Adresse ein.")]
         public string Email { get; set; } = "";
 
         [Display(Name = "Passwort"), Required(ErrorMessage = "Bitte gib dein Passwort ein.")]

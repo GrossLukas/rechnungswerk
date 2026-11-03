@@ -1,31 +1,13 @@
 <script type="module" src="@Assets["Components/Layout/ReconnectModal.razor.js"]"></script>
 
 <dialog id="components-reconnect-modal" data-nosnippet>
-    <div class="components-reconnect-container">
-        <div class="components-rejoining-animation" aria-hidden="true">
-            <div></div>
-            <div></div>
-        </div>
-        <p class="components-reconnect-first-attempt-visible">
-            Verbindung zum Server wird wiederhergestellt …
-        </p>
-        <p class="components-reconnect-repeated-attempt-visible">
-            Das hat nicht geklappt. Nächster Versuch in <span id="components-seconds-to-next-attempt"></span> Sekunden.
-        </p>
-        <p class="components-reconnect-failed-visible">
-            Die Verbindung ist abgebrochen.<br />Versuche es erneut oder lade die Seite neu.
-        </p>
-        <button id="components-reconnect-button" class="components-reconnect-failed-visible">
-            Erneut verbinden
-        </button>
-        <p class="components-pause-visible">
-            Die Sitzung wurde vom Server pausiert.
-        </p>
-        <p class="components-resume-failed-visible">
-            Die Sitzung konnte nicht fortgesetzt werden.<br />Versuche es erneut oder lade die Seite neu.
-        </p>
-        <button id="components-resume-button" class="components-pause-visible components-resume-failed-visible">
-            Fortsetzen
-        </button>
-    </div>
+    <p class="components-reconnect-first-attempt-visible">Verbindung wird wiederhergestellt …</p>
+    <p class="components-reconnect-repeated-attempt-visible">
+        Nächster Versuch in <span id="components-seconds-to-next-attempt"></span> Sekunden.
+    </p>
+    <p class="components-reconnect-failed-visible">Die Verbindung ist abgebrochen.</p>
+    <button id="components-reconnect-button" class="button button-primary components-reconnect-failed-visible">Erneut verbinden</button>
+    <p class="components-pause-visible">Die Sitzung ist pausiert.</p>
+    <p class="components-resume-failed-visible">Die Sitzung lässt sich nicht fortsetzen.</p>
+    <button id="components-resume-button" class="button button-primary components-pause-visible components-resume-failed-visible">Fortsetzen</button>
 </dialog>

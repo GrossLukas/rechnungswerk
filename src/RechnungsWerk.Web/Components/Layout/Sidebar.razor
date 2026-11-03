@@ -1,0 +1,41 @@
+@inject IConfiguration Configuration
+
+@* Seitenleiste wie in Apple Notes; auf schmalen Bildschirmen wird sie zur Tab-Leiste am unteren Rand. *@
+<nav class="sidebar" aria-label="Hauptnavigation">
+    <a class="sidebar-brand" href="">RechnungsWerk</a>
+
+    <ul class="sidebar-items" role="list">
+        <li><NavLink class="sidebar-link" href="anzeigen"><Icon Name="view" /><span>Anzeigen</span></NavLink></li>
+        <li><NavLink class="sidebar-link" href="pruefen"><Icon Name="check" /><span>Prüfen</span></NavLink></li>
+        <AuthorizeView>
+            <li><NavLink class="sidebar-link" href="rechnungen"><Icon Name="invoice" /><span>Rechnungen</span></NavLink></li>
+            <li><NavLink class="sidebar-link" href="kunden"><Icon Name="people" /><span>Kunden</span></NavLink></li>
+            <li><NavLink class="sidebar-link" href="artikel"><Icon Name="tag" /><span>Artikel</span></NavLink></li>
+            <li><NavLink class="sidebar-link" href="einstellungen"><Icon Name="settings" /><span>Einstellungen</span></NavLink></li>
+        </AuthorizeView>
+    </ul>
+
+    <div class="sidebar-footer">
+        <AuthorizeView>
+            <Authorized>
+                <form action="abmelden" method="post" class="sidebar-logout">
+                    <AntiforgeryToken />
+                    <button type="submit" class="sidebar-link"><Icon Name="logout" /><span>Abmelden</span></button>
+                </form>
+            </Authorized>
+            <NotAuthorized>
+                <NavLink class="sidebar-link" href="anmelden"><Icon Name="login" /><span>Anmelden</span></NavLink>
+            </NotAuthorized>
+        </AuthorizeView>
+        @if (SourceUrl is not null)
+        {
+            <a class="sidebar-source" href="@SourceUrl" rel="noopener">Quellcode</a>
+        }
+    </div>
+</nav>
+
+@code {
+    // AGPL-3.0, Abschnitt 13: Wer eine veränderte Fassung anbietet, verlinkt hier den eigenen Quellcode.
+    private string? SourceUrl => Uri.TryCreate(Configuration["SourceCode:Url"], UriKind.Absolute, out var uri)
+        && uri.Scheme is "https" or "http" ? uri.ToString() : null;
+}

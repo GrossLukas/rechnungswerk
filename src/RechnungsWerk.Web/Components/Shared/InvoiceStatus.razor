@@ -1,14 +1,14 @@
 @if (Invoice.SentAt is not null)
 {
-    <span class="badge badge-success" title="@($"Versendet am {Display.Timestamp(Invoice.SentAt)} an {Invoice.SentTo}")">Versendet</span>
+    <span class="status status-done">Versendet</span>
 }
 else if (Invoice.LastMailError is not null)
 {
-    <span class="badge badge-danger" title="@Invoice.LastMailError">Versand fehlgeschlagen</span>
+    <span class="status status-error">Versand fehlgeschlagen</span>
 }
 else
 {
-    <span class="badge badge-neutral">Nicht versendet</span>
+    <span class="status">Entwurf</span>
 }
 
 @code {

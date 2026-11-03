@@ -1,0 +1,19 @@
+@* Leerer Zustand: eine Zeile und eine Hauptaktion. *@
+<div class="empty">
+    <p>@Text</p>
+    @if (ActionHref is not null && ActionText is not null)
+    {
+        <a class="button button-primary" href="@ActionHref">@ActionText</a>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = "";
+
+    [Parameter]
+    public string? ActionText { get; set; }
+
+    [Parameter]
+    public string? ActionHref { get; set; }
+}

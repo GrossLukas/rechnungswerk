@@ -1,0 +1,33 @@
+@typeparam TValue
+@using System.Linq.Expressions
+
+@* Kurzes Label über dem Eingabefeld; Fehler stehen direkt darunter und nur, wenn es wirklich einen gibt. *@
+<div class="field">
+    <label>
+        <span class="field-label">@Label</span>
+        @ChildContent
+    </label>
+    @if (For is not null)
+    {
+        <ValidationMessage For="For" />
+    }
+    @if (!string.IsNullOrEmpty(Error))
+    {
+        <p class="field-error" role="alert">@Error</p>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = "";
+
+    [Parameter]
+    public Expression<Func<TValue>>? For { get; set; }
+
+    /// <summary>Meldung aus der Fachprüfung, die keine DataAnnotation ist (z. B. „Den Kunden gibt es nicht mehr“).</summary>
+    [Parameter]
+    public string? Error { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

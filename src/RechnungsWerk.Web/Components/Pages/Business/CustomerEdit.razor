@@ -1,147 +1,81 @@
 @page "/kunden/neu"
 @page "/kunden/{Id:int}"
-@rendermode InteractiveServer
+@rendermode AppRenderModes.Live
 @inject CustomerService Customers
 @inject NavigationManager Navigation
 
-<PageTitle>@(Id is null ? "Neuer Kunde" : "Kunde bearbeiten") – RechnungsWerk</PageTitle>
+<PageTitle>@Title – RechnungsWerk</PageTitle>
 
 @if (loading)
 {
-    <p class="muted" role="status">Wird geladen …</p>
+    return;
 }
-else if (notFound)
+
+@if (notFound)
 {
-    <section class="narrow">
-        <h1>Kunde nicht gefunden</h1>
-        <p><a class="btn btn-primary" href="kunden">Zur Kundenliste</a></p>
-    </section>
+    <PageHeader Title="Kunde nicht gefunden" />
+    <EmptyState Text="Diesen Kunden gibt es nicht mehr." ActionText="Zu den Kunden" ActionHref="kunden" />
+    return;
 }
-else
-{
-    <div class="page-header">
-        <div>
-            <p class="eyebrow"><a href="kunden">← Alle Kunden</a></p>
-            <h1>@(Id is null ? "Neuer Kunde" : title)</h1>
+
+<PageHeader Title="@Title" />
+
+<EditForm Model="form" OnValidSubmit="SaveAsync" novalidate class="form">
+    <ModelValidator />
+    <fieldset class="section">
+        <legend>Anschrift</legend>
+        <Field Label="Name" For="() => form.Name"><InputText @bind-Value="form.Name" /></Field>
+        <Field Label="Straße" For="() => form.Street"><InputText @bind-Value="form.Street" /></Field>
+        <div class="field-row">
+            <Field Label="PLZ" For="() => form.PostalCode"><InputText @bind-Value="form.PostalCode" inputmode="numeric" /></Field>
+            <Field Label="Ort" For="() => form.City"><InputText @bind-Value="form.City" /></Field>
         </div>
-    </div>
+        <Field Label="Land" For="() => form.CountryCode"><InputText @bind-Value="form.CountryCode" maxlength="2" /></Field>
+    </fieldset>
 
-    <EditForm Model="form" OnValidSubmit="SaveAsync" novalidate class="form">
-        <ModelValidator />
-        <fieldset class="form-section">
-            <legend>Anschrift</legend>
-            <div class="form-grid">
-                <div class="field span-2">
-                    <label for="customer-name">Name</label>
-                    <InputText id="customer-name" @bind-Value="form.Name" />
-                    <ValidationMessage For="() => form.Name" />
-                </div>
-                <div class="field span-2">
-                    <label for="customer-street">Straße und Hausnummer</label>
-                    <InputText id="customer-street" @bind-Value="form.Street" />
-                    <ValidationMessage For="() => form.Street" />
-                </div>
-                <div class="field">
-                    <label for="customer-postal">PLZ</label>
-                    <InputText id="customer-postal" @bind-Value="form.PostalCode" inputmode="numeric" />
-                    <ValidationMessage For="() => form.PostalCode" />
-                </div>
-                <div class="field">
-                    <label for="customer-city">Ort</label>
-                    <InputText id="customer-city" @bind-Value="form.City" />
-                    <ValidationMessage For="() => form.City" />
-                </div>
-                <div class="field">
-                    <label for="customer-country">Land</label>
-                    <InputText id="customer-country" @bind-Value="form.CountryCode" maxlength="2" />
-                    <ValidationMessage For="() => form.CountryCode" />
-                </div>
-            </div>
-        </fieldset>
+    <fieldset class="section">
+        <legend>Rechnungsempfang</legend>
+        <Field Label="E-Mail" For="() => form.Email"><InputText type="email" @bind-Value="form.Email" /></Field>
+        <Field Label="Leitweg-ID" For="() => form.LeitwegId"><InputText @bind-Value="form.LeitwegId" class="mono" spellcheck="false" /></Field>
+        <Field Label="Ansprechperson" For="() => form.ContactName"><InputText @bind-Value="form.ContactName" /></Field>
+        <Field Label="Käuferreferenz" For="() => form.BuyerReference"><InputText @bind-Value="form.BuyerReference" /></Field>
+        <Field Label="USt-IdNr." For="() => form.VatId"><InputText @bind-Value="form.VatId" /></Field>
+        <Field Label="Kundennummer" For="() => form.CustomerNumber"><InputText @bind-Value="form.CustomerNumber" /></Field>
+    </fieldset>
 
-        <fieldset class="form-section">
-            <legend>Zustellung</legend>
-            <p class="hint">Für die E-Rechnung brauchst du eine E-Mail-Adresse oder – bei Behörden – die Leitweg-ID.</p>
-            <div class="form-grid">
-                <div class="field">
-                    <label for="customer-contact">Ansprechperson <span class="optional">(optional)</span></label>
-                    <InputText id="customer-contact" @bind-Value="form.ContactName" />
-                    <ValidationMessage For="() => form.ContactName" />
-                </div>
-                <div class="field">
-                    <label for="customer-email">E-Mail für Rechnungen</label>
-                    <InputText id="customer-email" type="email" @bind-Value="form.Email" />
-                    <ValidationMessage For="() => form.Email" />
-                </div>
-                <div class="field">
-                    <label for="customer-leitweg">Leitweg-ID <span class="optional">(nur Behörden)</span></label>
-                    <InputText id="customer-leitweg" @bind-Value="form.LeitwegId" class="mono" placeholder="04011000-1234512345-06" />
-                    <ValidationMessage For="() => form.LeitwegId" />
-                </div>
-                <div class="field">
-                    <label for="customer-buyerref">Käuferreferenz <span class="optional">(optional)</span></label>
-                    <InputText id="customer-buyerref" @bind-Value="form.BuyerReference" />
-                    <ValidationMessage For="() => form.BuyerReference" />
-                </div>
-            </div>
-        </fieldset>
-
-        <fieldset class="form-section">
-            <legend>Weitere Angaben</legend>
-            <div class="form-grid">
-                <div class="field">
-                    <label for="customer-vat">USt-IdNr. <span class="optional">(optional)</span></label>
-                    <InputText id="customer-vat" @bind-Value="form.VatId" />
-                    <ValidationMessage For="() => form.VatId" />
-                </div>
-                <div class="field">
-                    <label for="customer-number">Kundennummer <span class="optional">(optional)</span></label>
-                    <InputText id="customer-number" @bind-Value="form.CustomerNumber" />
-                    <ValidationMessage For="() => form.CustomerNumber" />
-                </div>
-            </div>
-        </fieldset>
-
-        <ErrorList Errors="errors" />
-
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary" disabled="@saving">@(saving ? "Wird gespeichert …" : "Kunden speichern")</button>
-            <a class="btn btn-ghost" href="kunden">Abbrechen</a>
-        </div>
-    </EditForm>
-
-    @if (Id is not null)
-    {
-        <section class="danger-zone">
-            <h2>Kunden löschen</h2>
-            <p class="hint">Bestehende Rechnungen behalten die Kundendaten, mit denen sie erstellt wurden.</p>
-            @if (!confirmDelete)
+    <FormErrors Messages="errors" />
+    <div class="form-actions">
+        @if (Id is not null)
+        {
+            @if (confirmDelete)
             {
-                <button type="button" class="btn btn-danger-outline" @onclick="() => confirmDelete = true">Kunden löschen …</button>
+                <span class="confirm">
+                    <button type="button" class="button button-danger" @onclick="DeleteAsync">Wirklich löschen</button>
+                    <button type="button" class="button button-plain" @onclick="() => confirmDelete = false">Abbrechen</button>
+                </span>
             }
             else
             {
-                <p>Willst du „@title“ wirklich löschen?</p>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-danger" @onclick="DeleteAsync">Ja, löschen</button>
-                    <button type="button" class="btn btn-ghost" @onclick="() => confirmDelete = false">Abbrechen</button>
-                </div>
+                <button type="button" class="button button-plain button-danger-text" @onclick="() => confirmDelete = true">Löschen</button>
             }
-        </section>
-    }
-}
+        }
+        <button type="submit" class="button button-primary" disabled="@saving">Speichern</button>
+    </div>
+</EditForm>
 
 @code {
     [Parameter]
     public int? Id { get; set; }
 
     private CustomerForm form = new();
-    private string title = "";
+    private string? name;
     private IReadOnlyList<string>? errors;
     private bool loading = true;
     private bool notFound;
     private bool saving;
     private bool confirmDelete;
+
+    private string Title => Id is null ? "Neuer Kunde" : name ?? "Kunde";
 
     protected override async Task OnParametersSetAsync()
     {
@@ -151,7 +85,7 @@ else
             var customer = await Customers.GetAsync(id);
             notFound = customer is null;
             form = customer is null ? new CustomerForm() : CustomerForm.From(customer);
-            title = customer?.Name ?? "";
+            name = customer?.Name;
         }
 
         loading = false;
