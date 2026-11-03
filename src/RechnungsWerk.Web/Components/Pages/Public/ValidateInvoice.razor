@@ -58,9 +58,7 @@ else if (report is null)
         busy = true;
         try
         {
-            var content = await BrowserFiles.ReadAsync(e.File);
-            var xml = Reader.ExtractXml(content);
-            report = await Validator.ValidateAsync(xml);
+            report = await BrowserFiles.ProcessAsync(e.File, content => Validator.ValidateAsync(Reader.ExtractXml(content)));
             fileName = e.File.Name;
         }
         catch (EInvoiceReadException ex)

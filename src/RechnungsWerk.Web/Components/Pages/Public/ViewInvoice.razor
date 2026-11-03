@@ -47,8 +47,7 @@
         busy = true;
         try
         {
-            var content = await BrowserFiles.ReadAsync(e.File);
-            view = Reader.Read(content).View;
+            view = await BrowserFiles.ProcessAsync(e.File, content => Task.FromResult(Reader.Read(content).View));
             fileName = e.File.Name;
         }
         catch (EInvoiceReadException ex)
