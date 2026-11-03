@@ -17,8 +17,9 @@
     @if (!Report.ScenarioMatched)
     {
         <p class="alert alert-warning">
-            Für diese Datei gibt es kein passendes Prüfszenario. Meist ist es keine XRechnung bzw. kein EN-16931-Profil
-            (z. B. ZUGFeRD BASIC oder MINIMUM) – solche Dateien gelten in Deutschland nicht als E-Rechnung.
+            Für diese Datei gibt es kein passendes Prüfszenario. Geprüft werden XRechnung (UBL und CII) und das Profil
+            EN 16931 (ZUGFeRD/Factur-X „Comfort“). Andere Profile wie ZUGFeRD MINIMUM, BASIC WL, BASIC oder EXTENDED kann der
+            Validator nicht bewerten – MINIMUM und BASIC WL gelten in Deutschland ohnehin nicht als E-Rechnung.
         </p>
     }
 

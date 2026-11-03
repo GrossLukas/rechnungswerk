@@ -23,9 +23,9 @@
 else
 {
     <div class="alert alert-info">
-        <p><strong>Tipp:</strong> Gmail und Outlook.com verlangen für SMTP ein App-Passwort (mit aktivierter Zwei-Faktor-Anmeldung) –
-            dein normales Passwort wird abgelehnt. Bei Microsoft 365 ist „SMTP AUTH“ oft abgeschaltet und muss von der
-            Administration für das Postfach freigegeben werden.</p>
+        <p><strong>Tipp:</strong> Gmail verlangt für SMTP ein App-Passwort (dafür muss die Zwei-Faktor-Anmeldung aktiv sein) –
+            dein normales Passwort wird abgelehnt. Outlook.com und Microsoft 365 setzen je nach Konto OAuth voraus, das RechnungsWerk
+            noch nicht unterstützt; bei Microsoft 365 ist „SMTP AUTH“ außerdem oft abgeschaltet und muss für das Postfach freigegeben werden.</p>
     </div>
 
     <EditForm Model="form" OnValidSubmit="SaveAsync" novalidate class="form form-wide">
