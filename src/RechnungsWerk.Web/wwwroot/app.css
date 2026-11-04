@@ -1036,10 +1036,26 @@ input[type="radio"] {
     color: var(--color-text-secondary);
 }
 
+/* Texte brechen notfalls im Wort um, Zahlen nie. */
+.table td:not(.num) {
+    overflow-wrap: anywhere;
+}
+
 .table .num {
     padding: var(--space-2) 0 var(--space-2) var(--space-3);
     text-align: right;
     white-space: nowrap;
+}
+
+/* Schmales Blatt: Positionsnummer und Steuersatz ausblenden – die Sätze stehen darunter in der Steuertabelle –,
+   damit der Zeilenbetrag ohne Seitwärtsrollen sichtbar bleibt. */
+@container (max-width: 480px) {
+    .table-lines th:nth-child(1),
+    .table-lines td:nth-child(1),
+    .table-lines th:nth-child(5),
+    .table-lines td:nth-child(5) {
+        display: none;
+    }
 }
 
 .line-description {
@@ -1368,6 +1384,11 @@ input[type="radio"] {
     .invoice-sheet,
     .report {
         max-width: none;
+    }
+
+    /* Papier rollt nicht: Was übersteht, würde abgeschnitten. */
+    .table-wrap {
+        overflow: visible;
     }
 
     .title-print-only .invoice-title {
