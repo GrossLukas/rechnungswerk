@@ -28,7 +28,10 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents(options => options.DetailedErrors = builder.Environment.IsDevelopment());
+    .AddInteractiveServerComponents(options => options.DetailedErrors = builder.Environment.IsDevelopment())
+    // Ein geänderter Feldwert reist in einer Nachricht. Mit den erlaubten 10.000 Zeichen (Mailtext) und Mehrbyte-Zeichen
+    // reichten die standardmäßigen 32 KB nicht: Die Verbindung brach ab, und der Wert ging still verloren.
+    .AddHubOptions(options => options.MaximumReceiveMessageSize = 128 * 1024);
 
 builder.Services.AddDbContextFactory<AppDbContext>(options => options.UseSqlite(dataPaths.ConnectionString));
 builder.Services.TryAddScoped(sp => sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());

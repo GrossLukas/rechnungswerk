@@ -160,6 +160,21 @@ public sealed class WebSecurityTests(RechnungsWerkAppFactory factory) : IClassFi
         Assert.True(File.Exists(paths.SetupCode));
     }
 
+    [Fact]
+    public void Live_connection_takes_the_longest_allowed_field_in_one_message()
+    {
+        // Ein geänderter Feldwert reist in einer SignalR-Nachricht. Mit den erlaubten 10.000 Zeichen und Mehrbyte-Zeichen
+        // reichten die standardmäßigen 32 KB nicht: Die Verbindung brach ab, der Wert ging still verloren.
+        var hubType = typeof(Microsoft.AspNetCore.Components.Server.CircuitOptions).Assembly
+            .GetType("Microsoft.AspNetCore.Components.Server.ComponentHub", throwOnError: true)!;
+        var optionsType = typeof(Microsoft.Extensions.Options.IOptions<>)
+            .MakeGenericType(typeof(Microsoft.AspNetCore.SignalR.HubOptions<>).MakeGenericType(hubType));
+        var options = factory.Services.GetRequiredService(optionsType);
+        var hubOptions = (Microsoft.AspNetCore.SignalR.HubOptions)optionsType.GetProperty("Value")!.GetValue(options)!;
+
+        Assert.True(hubOptions.MaximumReceiveMessageSize >= 128 * 1024, $"Grenze: {hubOptions.MaximumReceiveMessageSize} Byte");
+    }
+
     private static string Header(HttpResponseMessage response, string name) =>
         response.Headers.TryGetValues(name, out var values) || response.Content.Headers.TryGetValues(name, out values)
             ? string.Join(",", values)
