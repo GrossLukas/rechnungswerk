@@ -233,6 +233,11 @@ h1:focus {
     padding: var(--space-6) 40px var(--space-7);
 }
 
+/* Der Inhalt rollt in einer Spalte fester Höhe – ohne das würde z. B. ein mehrzeiliger Seitenkopf gestaucht. */
+.content > * {
+    flex-shrink: 0;
+}
+
 /* ---------- Bausteine ---------- */
 .page-header {
     display: flex;
