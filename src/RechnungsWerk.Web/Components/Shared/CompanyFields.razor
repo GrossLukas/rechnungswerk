@@ -36,9 +36,15 @@
 
 <fieldset class="section">
     <legend>Rechnungen</legend>
-    <Field Label="Nummer beginnt mit" For="() => Model.InvoiceNumberPrefix"><InputText @bind-Value="Model.InvoiceNumberPrefix" spellcheck="false" /></Field>
-    <Field Label="Nächste Nummer" For="() => Model.NextInvoiceNumber"><InputNumber @bind-Value="Model.NextInvoiceNumber" min="1" ParsingErrorMessage="Bitte gib eine ganze Zahl ein." /></Field>
-    <p class="preview" aria-live="polite">@InvoiceService.FormatNumber(Model.InvoiceNumberPrefix, Model.NextInvoiceNumber, DateTime.Today.Year)</p>
+    @* Vorsatz, laufende Nummer und was daraus wird in einer Zeile: Die Vorschau gehört ins Raster, nicht als Nebenzeile darunter. *@
+    <div class="field-row field-row-3">
+        <Field Label="Nummer beginnt mit" For="() => Model.InvoiceNumberPrefix"><InputText @bind-Value="Model.InvoiceNumberPrefix" spellcheck="false" /></Field>
+        <Field Label="Nächste Nummer" For="() => Model.NextInvoiceNumber"><InputNumber @bind-Value="Model.NextInvoiceNumber" min="1" ParsingErrorMessage="Bitte gib eine ganze Zahl ein." /></Field>
+        <div class="field">
+            <span class="field-label" id="next-invoice-number">Nächste Rechnung</span>
+            <output class="field-value mono" aria-labelledby="next-invoice-number">@InvoiceService.FormatNumber(Model.InvoiceNumberPrefix, Model.NextInvoiceNumber, DateTime.Today.Year)</output>
+        </div>
+    </div>
     <Field Label="Zahlungsziel (Tage)" For="() => Model.DefaultPaymentDays"><InputNumber @bind-Value="Model.DefaultPaymentDays" min="0" max="365" ParsingErrorMessage="Bitte gib eine ganze Zahl ein." /></Field>
     <Field Label="Format" For="() => Model.DefaultFormat">
         <InputSelect @bind-Value="Model.DefaultFormat">
