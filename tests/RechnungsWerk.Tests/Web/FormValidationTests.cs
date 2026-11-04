@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using RechnungsWerk.Web.Components.Shared;
 using RechnungsWerk.Web.Services;
 
 namespace RechnungsWerk.Tests.Web;
@@ -57,5 +58,29 @@ public sealed class FormValidationTests
     {
         Assert.False(HasCountryError(Validate(Customer(country))));
         Assert.False(HasCountryError(Validate(Company(country))));
+    }
+
+    [Fact]
+    public void Form_shows_all_errors_at_once_not_round_by_round()
+    {
+        var customer = Customer("D1");
+        customer.Email = "abc@";
+        customer.LeitwegId = "123";
+
+        var fields = ModelValidator.Validate(customer).SelectMany(r => r.MemberNames).ToList();
+
+        Assert.Contains(nameof(CustomerForm.Email), fields);
+        Assert.Contains(nameof(CustomerForm.LeitwegId), fields);
+        Assert.Contains(nameof(CustomerForm.CountryCode), fields);
+    }
+
+    [Fact]
+    public void Checks_of_the_form_itself_are_not_reported_twice()
+    {
+        var company = Company("UK");
+
+        var results = ModelValidator.Validate(company);
+
+        Assert.Single(results);
     }
 }

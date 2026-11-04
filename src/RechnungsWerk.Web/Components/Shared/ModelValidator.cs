@@ -67,9 +67,7 @@ public sealed class ModelValidator : ComponentBase, IDisposable
         messages.Clear();
         foreach (var model in (IEnumerable<object>)[subscribedContext.Model, .. Include ?? []])
         {
-            var results = new List<ValidationResult>();
-            Validator.TryValidateObject(model, new ValidationContext(model), results, validateAllProperties: true);
-            foreach (var result in results)
+            foreach (var result in Validate(model))
             {
                 var members = result.MemberNames.Any() ? result.MemberNames : [string.Empty];
                 foreach (var member in members)
@@ -80,6 +78,26 @@ public sealed class ModelValidator : ComponentBase, IDisposable
         }
 
         subscribedContext.NotifyValidationStateChanged();
+    }
+
+    /// <summary>Alle Fehler eines Modells auf einmal: DataAnnotations und <see cref="IValidatableObject"/>.</summary>
+    internal static List<ValidationResult> Validate(object model)
+    {
+        var results = new List<ValidationResult>();
+        var context = new ValidationContext(model);
+        if (!Validator.TryValidateObject(model, context, results, validateAllProperties: true) && model is IValidatableObject validatable)
+        {
+            // TryValidateObject prüft IValidatableObject erst, wenn alle Feldregeln bestehen – Fehler erschienen sonst stufenweise.
+            foreach (var extra in validatable.Validate(context))
+            {
+                if (!results.Any(r => r.ErrorMessage == extra.ErrorMessage && r.MemberNames.SequenceEqual(extra.MemberNames)))
+                {
+                    results.Add(extra);
+                }
+            }
+        }
+
+        return results;
     }
 
     private void Unsubscribe()
