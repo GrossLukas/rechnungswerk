@@ -257,6 +257,39 @@ h1:focus,
     flex-shrink: 0;
 }
 
+/* Live-Seiten zeichnen erst mit der Verbindung. Dauert das, zeigt der noch leere Inhalt einen dezenten Ladekreis. */
+@media (scripting: enabled) {
+    .content:not(:has(> :not(noscript)))::after {
+        content: "";
+        width: 20px;
+        height: 20px;
+        margin: auto;
+        border: 2px solid var(--color-separator);
+        border-top-color: var(--color-text-secondary);
+        border-radius: 50%;
+        opacity: 0;
+        animation: content-loading-reveal 0s linear 0.6s forwards, content-loading-spin 0.8s linear infinite;
+    }
+}
+
+@media (scripting: enabled) and (prefers-reduced-motion: reduce) {
+    .content:not(:has(> :not(noscript)))::after {
+        animation: content-loading-reveal 0s linear 0.6s forwards;
+    }
+}
+
+@keyframes content-loading-reveal {
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes content-loading-spin {
+    to {
+        transform: rotate(1turn);
+    }
+}
+
 /* ---------- Bausteine ---------- */
 /* Passen Titel und Aktion nicht nebeneinander, rutscht die Aktion in die nächste Zeile – statt den Titel zu zerreißen. */
 .page-header {
