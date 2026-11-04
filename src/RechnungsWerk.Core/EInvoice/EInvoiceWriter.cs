@@ -27,7 +27,7 @@ public sealed class EInvoiceWriter(InvoicePdfRenderer pdfRenderer)
         {
             case EInvoiceFormat.XRechnungUbl:
                 descriptor.Save(output, ZUGFeRDVersion.Version23, Profile.XRechnung, ZUGFeRDFormats.UBL);
-                return output.ToArray();
+                return UblPaymentTermsWorkaround.Apply(output.ToArray());
             case EInvoiceFormat.XRechnungCii:
                 descriptor.Save(output, ZUGFeRDVersion.Version23, Profile.XRechnung, ZUGFeRDFormats.CII);
                 return CiiDeliveryWorkaround.Apply(output.ToArray());

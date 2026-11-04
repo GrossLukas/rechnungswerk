@@ -10,6 +10,8 @@ public sealed class EInvoiceRoundTripTests
     private static readonly XNamespace Rsm = "urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100";
     private static readonly XNamespace Ram = "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100";
     private static readonly XNamespace Udt = "urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100";
+    private static readonly XNamespace Cac = "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2";
+    private static readonly XNamespace Cbc = "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2";
 
     private readonly EInvoiceWriter writer = new();
     private readonly EInvoiceReader reader = new();
@@ -120,6 +122,17 @@ public sealed class EInvoiceRoundTripTests
         Assert.Empty(transaction.Element(Ram + "ApplicableHeaderTradeDelivery")!.Elements());
         var period = transaction.Element(Ram + "ApplicableHeaderTradeSettlement")?.Element(Ram + "BillingSpecifiedPeriod");
         Assert.Equal(["20261001", "20261031"], period?.Descendants(Udt + "DateTimeString").Select(d => d.Value) ?? []);
+    }
+
+    [Fact]
+    public void Ubl_payment_terms_hold_only_the_text()
+    {
+        var document = TestInvoices.Sample() with { PaymentTerms = "Zahlbar innerhalb von 14 Tagen ohne Abzug." };
+
+        var xml = SecureXml.Load(writer.Write(document, EInvoiceFormat.XRechnungUbl));
+
+        var note = xml.Descendants(Cac + "PaymentTerms").Elements(Cbc + "Note").Single();
+        Assert.Equal("Zahlbar innerhalb von 14 Tagen ohne Abzug.", note.Value);
     }
 
     [Theory]
