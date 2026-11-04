@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -73,7 +74,10 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.SlidingExpiration = true;
 });
-builder.Services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.FromMinutes(5));
+// Sicherheitsstempel bei jeder Anfrage prüfen: Nach Abmelden oder Passwortwechsel gilt ein altes Cookie sofort nicht mehr.
+builder.Services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.Zero);
+builder.Services.AddSingleton<SignOutBroadcast>();
+builder.Services.AddScoped<CircuitHandler, SignOutCircuitHandler>();
 builder.Services.AddAntiforgery(options => options.Cookie.Name = "rechnungswerk.antiforgery");
 
 builder.Services.AddSingleton(TimeProvider.System);

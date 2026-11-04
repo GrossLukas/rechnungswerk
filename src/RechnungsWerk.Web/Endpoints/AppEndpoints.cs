@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 using RechnungsWerk.Core.EInvoice;
 using RechnungsWerk.Web.Data;
+using RechnungsWerk.Web.Infrastructure;
 using RechnungsWerk.Web.Services;
 
 namespace RechnungsWerk.Web.Endpoints;
@@ -12,9 +13,17 @@ public static class AppEndpoints
     public static IEndpointRouteBuilder MapAppEndpoints(this IEndpointRouteBuilder endpoints)
     {
         // Abmelden nur per POST mit Antiforgery-Token (das Formular-Feld sorgt für die Prüfung; ungültige Token leitet Program.cs um).
-        endpoints.MapPost("/abmelden", async ([FromForm] string? returnUrl, SignInManager<AppUser> signInManager) =>
+        endpoints.MapPost("/abmelden", async ([FromForm] string? returnUrl, HttpContext context, SignInManager<AppUser> signInManager,
+            SignOutBroadcast signOuts) =>
         {
+            // Neuer Sicherheitsstempel: Das beendet die Sitzungen des Kontos auch in anderen Browsern und in offenen Tabs.
+            if (await signInManager.UserManager.GetUserAsync(context.User) is { } user)
+            {
+                await signInManager.UserManager.UpdateSecurityStampAsync(user);
+            }
+
             await signInManager.SignOutAsync();
+            signOuts.Announce();
             return TypedResults.LocalRedirect("/anmelden");
         });
 

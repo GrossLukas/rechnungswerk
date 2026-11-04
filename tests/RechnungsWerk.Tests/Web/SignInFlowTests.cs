@@ -55,6 +55,26 @@ public sealed partial class SignInFlowTests(RechnungsWerkAppFactory factory) : I
         Assert.Equal(HttpStatusCode.OK, page.StatusCode);
     }
 
+    [Fact]
+    public async Task Logout_ends_the_session_in_other_browsers_at_once()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var otherBrowser = await SignedInClientAsync(ct);
+        using var client = await SignedInClientAsync(ct);
+        var token = await TokenAsync(client, "/einstellungen/konto", ct);
+
+        using var logout = await client.PostAsync("/abmelden", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = token,
+        }), ct);
+
+        Assert.Equal(HttpStatusCode.Redirect, logout.StatusCode);
+        using var page = await otherBrowser.GetAsync("/einstellungen/konto", ct);
+        Assert.Equal(HttpStatusCode.Redirect, page.StatusCode);
+        var location = page.Headers.Location!;
+        Assert.Equal("/anmelden", location.IsAbsoluteUri ? location.AbsolutePath : location.OriginalString.Split('?')[0]);
+    }
+
     private HttpClient Client() => factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
     private async Task<HttpClient> SignedInClientAsync(CancellationToken ct)

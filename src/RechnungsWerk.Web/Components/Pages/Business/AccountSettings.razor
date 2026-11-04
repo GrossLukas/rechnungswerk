@@ -3,6 +3,7 @@
 @using Microsoft.AspNetCore.Identity
 @inject UserManager<AppUser> UserManager
 @inject SignInManager<AppUser> SignInManager
+@inject SignOutBroadcast SignOuts
 
 <PageTitle>Konto – RechnungsWerk</PageTitle>
 
@@ -86,7 +87,9 @@
                 return;
             }
 
+            // Der Passwortwechsel hat den Sicherheitsstempel erneuert: hier neu anmelden, offene Tabs prüfen sofort nach.
             await SignInManager.RefreshSignInAsync(user);
+            SignOuts.Announce();
             changed = true;
         }
         finally
