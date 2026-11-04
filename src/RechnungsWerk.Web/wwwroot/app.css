@@ -1014,6 +1014,13 @@ input[type="radio"] {
     font-weight: 600;
 }
 
+/* Lange Namen, Wörter und Adressen ohne Trennstelle brechen in ihrer Spalte um. */
+.party-name,
+.address,
+.status-line {
+    overflow-wrap: anywhere;
+}
+
 .invoice-section {
     margin-bottom: var(--space-5);
 }
