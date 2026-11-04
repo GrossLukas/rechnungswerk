@@ -25,7 +25,7 @@
                         <option value="@SmtpSecurity.None">Keine</option>
                     </InputSelect>
                 </Field>
-                <Field Label="Port" For="() => form.Port"><InputNumber @bind-Value="form.Port" min="1" max="65535" /></Field>
+                <Field Label="Port" For="() => form.Port"><InputNumber @bind-Value="form.Port" min="1" max="65535" ParsingErrorMessage="Bitte gib eine ganze Zahl ein." /></Field>
             </div>
             <Field Label="Benutzer" For="() => form.UserName"><InputText @bind-Value="form.UserName" autocomplete="off" spellcheck="false" /></Field>
             <Field Label="@(hasStoredPassword ? "Neues Passwort" : "Passwort")" For="() => form.NewPassword">

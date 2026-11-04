@@ -34,7 +34,7 @@
         </InputSelect>
     </Field>
 
-    <Field Label="Rechnungsdatum" For="() => form.IssueDate"><InputDate @bind-Value="form.IssueDate" /></Field>
+    <Field Label="Rechnungsdatum" For="() => form.IssueDate"><InputDate @bind-Value="form.IssueDate" ParsingErrorMessage="Bitte gib ein Datum ein." /></Field>
 
     <fieldset class="choice">
         <legend class="field-label">Leistung</legend>
@@ -46,22 +46,22 @@
     @if (form.ServiceMode == ServiceDateMode.Date)
     {
         <Field Label="Leistungsdatum" For="() => form.DeliveryDate" Error="@Error(nameof(InvoiceForm.DeliveryDate))">
-            <InputDate @bind-Value="form.DeliveryDate" />
+            <InputDate @bind-Value="form.DeliveryDate" ParsingErrorMessage="Bitte gib ein Datum ein." />
         </Field>
     }
     else
     {
         <div class="field-row">
             <Field Label="Von" For="() => form.ServicePeriodStart" Error="@Error(nameof(InvoiceForm.ServicePeriodStart))">
-                <InputDate @bind-Value="form.ServicePeriodStart" />
+                <InputDate @bind-Value="form.ServicePeriodStart" ParsingErrorMessage="Bitte gib ein Datum ein." />
             </Field>
             <Field Label="Bis" For="() => form.ServicePeriodEnd" Error="@Error(nameof(InvoiceForm.ServicePeriodEnd))">
-                <InputDate @bind-Value="form.ServicePeriodEnd" />
+                <InputDate @bind-Value="form.ServicePeriodEnd" ParsingErrorMessage="Bitte gib ein Datum ein." />
             </Field>
         </div>
     }
 
-    <Field Label="Fällig am" For="() => form.DueDate" Error="@Error(nameof(InvoiceForm.DueDate))"><InputDate @bind-Value="form.DueDate" /></Field>
+    <Field Label="Fällig am" For="() => form.DueDate" Error="@Error(nameof(InvoiceForm.DueDate))"><InputDate @bind-Value="form.DueDate" ParsingErrorMessage="Bitte gib ein Datum ein." /></Field>
 
     <section class="lines @(smallBusiness ? "no-vat" : null)" aria-label="Positionen">
         <div class="lines-head" aria-hidden="true">

@@ -37,9 +37,9 @@
 <fieldset class="section">
     <legend>Rechnungen</legend>
     <Field Label="Nummer beginnt mit" For="() => Model.InvoiceNumberPrefix"><InputText @bind-Value="Model.InvoiceNumberPrefix" spellcheck="false" /></Field>
-    <Field Label="Nächste Nummer" For="() => Model.NextInvoiceNumber"><InputNumber @bind-Value="Model.NextInvoiceNumber" min="1" /></Field>
+    <Field Label="Nächste Nummer" For="() => Model.NextInvoiceNumber"><InputNumber @bind-Value="Model.NextInvoiceNumber" min="1" ParsingErrorMessage="Bitte gib eine ganze Zahl ein." /></Field>
     <p class="preview" aria-live="polite">@InvoiceService.FormatNumber(Model.InvoiceNumberPrefix, Model.NextInvoiceNumber, DateTime.Today.Year)</p>
-    <Field Label="Zahlungsziel (Tage)" For="() => Model.DefaultPaymentDays"><InputNumber @bind-Value="Model.DefaultPaymentDays" min="0" max="365" /></Field>
+    <Field Label="Zahlungsziel (Tage)" For="() => Model.DefaultPaymentDays"><InputNumber @bind-Value="Model.DefaultPaymentDays" min="0" max="365" ParsingErrorMessage="Bitte gib eine ganze Zahl ein." /></Field>
     <Field Label="Format" For="() => Model.DefaultFormat">
         <InputSelect @bind-Value="Model.DefaultFormat">
             @foreach (var format in Enum.GetValues<EInvoiceFormat>())
