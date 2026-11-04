@@ -131,7 +131,10 @@ public sealed class Invoice
     /// <summary>Kundenname zum Zeitpunkt der Rechnung – für Liste und Suche.</summary>
     public string CustomerName { get; set; } = "";
 
-    /// <summary>Angaben zum Rechnungssteller, eingefroren beim Speichern (spätere Profiländerungen ändern alte Rechnungen nicht).</summary>
+    /// <summary>
+    /// Angaben zum Rechnungssteller. Entwürfe folgen dem Firmenprofil; mit dem Versand werden sie eingefroren
+    /// (spätere Profiländerungen ändern gestellte Rechnungen nicht).
+    /// </summary>
     public required SellerInfo Seller { get; set; }
 
     /// <summary>Angaben zum Kunden, eingefroren beim Speichern.</summary>
@@ -153,6 +156,21 @@ public sealed class Invoice
 
     /// <summary>Versendete Rechnungen gelten als gestellt und werden nicht mehr verändert.</summary>
     public bool IsLocked => SentAt is not null;
+
+    /// <summary>
+    /// Positionen mit 0 % brauchen außerhalb der Kleinunternehmerregelung einen Befreiungsgrund. Fehlt er, wurde der
+    /// Entwurf als Kleinunternehmer gespeichert und die Regelung inzwischen abgeschaltet.
+    /// </summary>
+    public bool LacksExemptionReason =>
+        !Seller.IsSmallBusiness && Lines.Any(l => l.VatRate == 0m) && string.IsNullOrWhiteSpace(TaxExemptionReason);
+
+    /// <summary>Summen für Liste und Suche aus Positionen und Steuerstatus neu berechnen.</summary>
+    public void UpdateTotals()
+    {
+        var calculation = InvoiceCalculator.Calculate(ToDocument());
+        NetTotal = calculation.LineTotal;
+        GrandTotal = calculation.GrandTotal;
+    }
 
     public InvoiceDocument ToDocument() => new()
     {

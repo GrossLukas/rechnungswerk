@@ -41,6 +41,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
             entity.Property(i => i.PreferredFormat).HasConversion<string>().HasMaxLength(32);
             entity.Property(i => i.SentFormat).HasConversion<string>().HasMaxLength(32);
             entity.Ignore(i => i.IsLocked);
+            entity.Ignore(i => i.LacksExemptionReason);
             MapSnapshot(entity.Property(i => i.Seller), "SellerJson");
             MapSnapshot(entity.Property(i => i.Buyer), "BuyerJson");
         });

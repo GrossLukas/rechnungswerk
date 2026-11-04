@@ -171,6 +171,11 @@ public sealed class InvoiceMailService(
             return ServiceResult.Fail("Diese Rechnung gibt es nicht mehr.");
         }
 
+        if (!invoice.IsLocked && invoice.LacksExemptionReason)
+        {
+            return ServiceResult.Fail("Für die Positionen mit 0 % Umsatzsteuer fehlt der Befreiungsgrund. Bearbeite die Rechnung und speichere sie, bevor du sie sendest.");
+        }
+
         var values = new MailTemplateValues(
             invoice.Number,
             invoice.CustomerName,

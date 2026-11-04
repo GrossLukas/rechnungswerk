@@ -81,6 +81,28 @@ public sealed class InvoiceMailServiceTests
     }
 
     [Fact]
+    public async Task Draft_with_zero_rate_but_without_exemption_reason_is_not_sent()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var smtp = new FakeSmtpServer();
+        using var database = new TestDatabase();
+        var (service, invoiceId) = await ArrangeAsync(database, smtp.Port, ct);
+        await using (var db = database.Create())
+        {
+            // So steht ein Entwurf da, der als Kleinunternehmer gespeichert wurde, nachdem die Regelung abgeschaltet ist.
+            var line = await db.InvoiceLines.SingleAsync(l => l.InvoiceId == invoiceId, ct);
+            line.VatRate = 0m;
+            await db.SaveChangesAsync(ct);
+        }
+
+        var result = await service.SendInvoiceAsync(invoiceId, EInvoiceFormat.XRechnungUbl, "einkauf@musterhausen.example", ct);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Befreiungsgrund", Assert.Single(result.GeneralErrors), StringComparison.Ordinal);
+        Assert.Empty(smtp.Messages);
+    }
+
+    [Fact]
     public async Task Invalid_recipient_is_rejected_before_anything_is_sent()
     {
         using var database = new TestDatabase();

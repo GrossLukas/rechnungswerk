@@ -183,8 +183,6 @@ public sealed class InvoiceService(IDbContextFactory<AppDbContext> dbFactory, EI
             })
             .ToList();
 
-        var calculation = InvoiceCalculator.Calculate(invoice.ToDocument());
-        invoice.NetTotal = calculation.LineTotal;
-        invoice.GrandTotal = calculation.GrandTotal;
+        invoice.UpdateTotals();
     }
 }

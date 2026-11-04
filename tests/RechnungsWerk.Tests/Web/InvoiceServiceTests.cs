@@ -175,6 +175,67 @@ public sealed class InvoiceServiceTests
     }
 
     [Fact]
+    public async Task Drafts_follow_a_changed_company_profile_while_sent_invoices_keep_theirs()
+    {
+        using var database = new TestDatabase();
+        var customerId = await SeedAsync(database);
+        var service = Service(database);
+        var ct = TestContext.Current.CancellationToken;
+        var draftId = (await service.SaveAsync(Form(customerId), ct)).Id!.Value;
+        var sentId = (await service.SaveAsync(Form(customerId), ct)).Id!.Value;
+        await MarkSentAsync(database, sentId, ct);
+
+        await ChangeProfileAsync(database, form =>
+        {
+            form.Name = "Umbenannt Software GmbH";
+            form.Iban = "DE89 3704 0044 0532 0130 00";
+        }, ct);
+
+        var draft = await service.GetAsync(draftId, ct);
+        var sent = await service.GetAsync(sentId, ct);
+        Assert.Equal("Umbenannt Software GmbH", draft!.Seller.Name);
+        Assert.Equal("DE89370400440532013000", draft.Seller.Iban);
+        Assert.Equal("Muster Software GmbH", sent!.Seller.Name);
+        var view = new EInvoiceReader().Read(service.Render(draft, EInvoiceFormat.XRechnungUbl).Content).View;
+        Assert.Equal("Umbenannt Software GmbH", view.Seller.Name);
+    }
+
+    [Fact]
+    public async Task Switching_to_the_small_business_rule_recalculates_drafts()
+    {
+        using var database = new TestDatabase();
+        var customerId = await SeedAsync(database);
+        var service = Service(database);
+        var ct = TestContext.Current.CancellationToken;
+        var draftId = (await service.SaveAsync(Form(customerId), ct)).Id!.Value;
+
+        await ChangeProfileAsync(database, form => form.IsSmallBusiness = true, ct);
+
+        var draft = await service.GetAsync(draftId, ct);
+        Assert.True(draft!.Seller.IsSmallBusiness);
+        Assert.Equal(draft.NetTotal, draft.GrandTotal);
+        var view = new EInvoiceReader().Read(service.Render(draft, EInvoiceFormat.XRechnungUbl).Content).View;
+        Assert.Equal(0m, view.Totals.TaxTotal);
+        Assert.Equal(draft.GrandTotal, view.Totals.GrandTotal);
+    }
+
+    internal static async Task MarkSentAsync(TestDatabase database, int id, CancellationToken ct)
+    {
+        await using var db = database.Create();
+        var stored = await db.Invoices.SingleAsync(i => i.Id == id, ct);
+        stored.SentAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+    }
+
+    internal static async Task ChangeProfileAsync(TestDatabase database, Action<CompanyForm> change, CancellationToken ct)
+    {
+        var companies = new CompanyService(database.Factory, Time);
+        var form = CompanyForm.From((await companies.GetAsync(ct))!);
+        change(form);
+        await companies.SaveAsync(form, ct);
+    }
+
+    [Fact]
     public void Number_prefix_replaces_the_year_placeholder()
     {
         Assert.Equal("RE-2026-0042", InvoiceService.FormatNumber("RE-{Jahr}-", 42, 2026));

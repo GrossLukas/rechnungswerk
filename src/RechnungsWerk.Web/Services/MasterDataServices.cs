@@ -23,6 +23,15 @@ public sealed class CompanyService(IDbContextFactory<AppDbContext> dbFactory, Ti
 
         form.ApplyTo(profile);
         profile.UpdatedAt = time.GetUtcNow().UtcDateTime;
+
+        // Entwürfe sind noch keine gestellten Rechnungen: Sie tragen den aktuellen Firmenstand (Anschrift, Bank, Steuerstatus).
+        var seller = profile.ToSellerInfo();
+        foreach (var draft in await db.Invoices.Include(i => i.Lines).Where(i => i.SentAt == null).ToListAsync(cancellationToken))
+        {
+            draft.Seller = seller;
+            draft.UpdateTotals();
+        }
+
         await db.SaveChangesAsync(cancellationToken);
     }
 }
