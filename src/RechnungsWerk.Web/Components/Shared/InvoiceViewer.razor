@@ -224,9 +224,9 @@
                             <span> – @attachment.Description</span>
                         }
                         <span class="muted">
-                            @if (attachment.Content is not null)
+                            @if (attachment.Size is { } size)
                             {
-                                @($" · {attachment.MimeType ?? "unbekannter Typ"} · {FileSize(attachment.Size)}")
+                                @($" · {attachment.MimeType ?? "unbekannter Typ"} · {FileSize(size)}")
                             }
                             @if (attachment.EmbeddedInPdf)
                             {

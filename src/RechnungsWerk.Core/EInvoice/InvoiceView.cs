@@ -95,15 +95,15 @@ public sealed class PaymentView
 
 public sealed record BankAccountView(string? Iban, string? Bic, string? BankName, string? AccountName);
 
-/// <summary>Anhang aus der Rechnung (BG-24) oder zusätzlich im PDF eingebettete Datei.</summary>
+/// <summary>
+/// Anhang aus der Rechnung (BG-24) oder zusätzlich im PDF eingebettete Datei. Die Ansicht behält nur die Größe –
+/// der Inhalt bliebe sonst für die ganze Sitzung im Speicher, obwohl ihn niemand anzeigt.
+/// </summary>
 public sealed record AttachmentView(
     string? Id,
     string? Description,
     string? FileName,
     string? MimeType,
-    byte[]? Content,
+    long? Size,
     string? ExternalUri,
-    bool EmbeddedInPdf)
-{
-    public long Size => Content?.LongLength ?? 0;
-}
+    bool EmbeddedInPdf);

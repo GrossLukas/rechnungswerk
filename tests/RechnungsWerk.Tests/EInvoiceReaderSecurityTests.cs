@@ -1,4 +1,8 @@
+using System.IO.Compression;
 using System.Text;
+using PdfSharp.Pdf;
+using PdfSharp.Pdf.Advanced;
+using PdfSharp.Pdf.IO;
 using RechnungsWerk.Core.EInvoice;
 using RechnungsWerk.Core.Invoicing;
 using RechnungsWerk.Core.Pdf;
@@ -115,6 +119,73 @@ public sealed class EInvoiceReaderSecurityTests
         var error = Assert.Throws<EInvoiceReadException>(() => reader.Read(Encoding.ASCII.GetBytes("%PDF-1.7\nkaputt")));
 
         Assert.Contains("PDF konnte nicht geöffnet werden", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Embedded_files_that_unpack_to_more_than_30_mb_together_are_rejected()
+    {
+        // Jede Datei liegt unter der Grenze für eine einzelne Datei (20 MB), zusammen sind es 78 MB.
+        var pdf = ZugferdWithAttachments(Enumerable.Range(1, 4).Select(i => ($"nullen-{i}.bin", new byte[19_500_000])));
+
+        var error = Assert.Throws<EInvoiceReadException>(() => reader.Read(pdf));
+
+        Assert.Contains("zusammen größer als 30 MB", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Validation_unpacks_only_the_invoice_from_a_pdf_with_large_attachments()
+    {
+        var plain = new EInvoiceWriter().Write(TestInvoices.Sample(), EInvoiceFormat.ZugferdPdf);
+        var pdf = ZugferdWithAttachments(Enumerable.Range(1, 4).Select(i => ($"nullen-{i}.bin", new byte[19_500_000])));
+
+        Assert.Equal(reader.ExtractXml(plain), reader.ExtractXml(pdf));
+    }
+
+    [Fact]
+    public void Further_embedded_files_are_listed_with_name_and_size()
+    {
+        var pdf = ZugferdWithAttachments([("lieferschein.txt", Encoding.UTF8.GetBytes(new string('x', 1234)))]);
+
+        var attachment = Assert.Single(reader.Read(pdf).View.Attachments);
+
+        Assert.Equal("lieferschein.txt", attachment.FileName);
+        Assert.Equal(1234, attachment.Size);
+        Assert.True(attachment.EmbeddedInPdf);
+    }
+
+    /// <summary>ZUGFeRD-PDF mit weiteren, per Flate komprimierten Dateien im /AF-Verzeichnis.</summary>
+    private static byte[] ZugferdWithAttachments(IEnumerable<(string Name, byte[] Content)> files)
+    {
+        var pdf = new EInvoiceWriter().Write(TestInvoices.Sample(), EInvoiceFormat.ZugferdPdf);
+        using var document = PdfReader.Open(new MemoryStream(pdf), PdfDocumentOpenMode.Modify);
+        var associated = (PdfArray)((PdfReference)document.Internals.Catalog.Elements["/AF"]!).Value;
+        foreach (var (name, content) in files)
+        {
+            using var compressed = new MemoryStream();
+            using (var zlib = new ZLibStream(compressed, CompressionLevel.SmallestSize, leaveOpen: true))
+            {
+                zlib.Write(content);
+            }
+
+            var stream = new PdfDictionary(document);
+            stream.Elements["/Type"] = new PdfName("/EmbeddedFile");
+            stream.Elements["/Filter"] = new PdfName("/FlateDecode");
+            stream.CreateStream(compressed.ToArray());
+            document.Internals.AddObject(stream);
+
+            var embedded = new PdfDictionary(document);
+            embedded.Elements["/F"] = stream.Reference;
+            var spec = new PdfDictionary(document);
+            spec.Elements["/Type"] = new PdfName("/Filespec");
+            spec.Elements["/F"] = new PdfString(name);
+            spec.Elements["/EF"] = embedded;
+            document.Internals.AddObject(spec);
+            associated.Elements.Add(spec.Reference!);
+        }
+
+        using var output = new MemoryStream();
+        document.Save(output);
+        return output.ToArray();
     }
 
     /// <summary>Gültige XRechnung, deren Hinweis 50.000 ineinander geschachtelte Elemente enthält.</summary>

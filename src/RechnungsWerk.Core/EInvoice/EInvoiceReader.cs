@@ -23,12 +23,12 @@ public sealed partial class EInvoiceReader
     private static readonly XNamespace Rsm = Cii;
     private static readonly XNamespace Zugferd1 = "urn:ferd:CrossIndustryDocument:invoice:1p0";
 
-    /// <summary>Gibt nur das Rechnungs-XML zurück (für die Prüfung durch den Validator).</summary>
-    public byte[] ExtractXml(byte[] content) => Prepare(content).Xml;
+    /// <summary>Gibt nur das Rechnungs-XML zurück (für die Prüfung durch den Validator); weitere Anhänge bleiben gepackt.</summary>
+    public byte[] ExtractXml(byte[] content) => Prepare(content, listAttachments: false).Xml;
 
     public EInvoiceReadResult Read(byte[] content)
     {
-        var (xml, fromPdf, otherFiles, syntax) = Prepare(content);
+        var (xml, fromPdf, otherFiles, syntax) = Prepare(content, listAttachments: true);
 
         InvoiceDescriptor descriptor;
         try
@@ -51,7 +51,8 @@ public sealed partial class EInvoiceReader
         return new EInvoiceReadResult(xml, view);
     }
 
-    private static (byte[] Xml, bool FromPdf, IReadOnlyList<PdfXmlExtractor.EmbeddedFile> OtherFiles, SyntaxInfo Syntax) Prepare(byte[] content)
+    private static (byte[] Xml, bool FromPdf, IReadOnlyList<PdfXmlExtractor.EmbeddedFile> OtherFiles, SyntaxInfo Syntax) Prepare(byte[] content,
+        bool listAttachments)
     {
         if (content.Length == 0)
         {
@@ -68,7 +69,7 @@ public sealed partial class EInvoiceReader
         IReadOnlyList<PdfXmlExtractor.EmbeddedFile> otherFiles = [];
         if (fromPdf)
         {
-            (xml, otherFiles) = PdfXmlExtractor.Extract(content);
+            (xml, otherFiles) = PdfXmlExtractor.Extract(content, measureOtherFiles: listAttachments);
         }
         else
         {
@@ -158,9 +159,9 @@ public sealed partial class EInvoiceReader
         var buyerReference = Clean(d.ReferenceOrderNo);
         var attachments = (d.AdditionalReferencedDocuments ?? [])
             .Where(a => a.AttachmentBinaryObject is { Length: > 0 } || !string.IsNullOrWhiteSpace(a.URIID) || !string.IsNullOrWhiteSpace(a.Filename))
-            .Select(a => new AttachmentView(Clean(a.ID), Clean(a.Name), Clean(a.Filename), Clean(a.MimeType), a.AttachmentBinaryObject,
+            .Select(a => new AttachmentView(Clean(a.ID), Clean(a.Name), Clean(a.Filename), Clean(a.MimeType), a.AttachmentBinaryObject?.LongLength,
                 Clean(a.URIID), EmbeddedInPdf: false))
-            .Concat(otherFiles.Select(f => new AttachmentView(null, f.Description, f.Name, f.MimeType, f.Content, null, EmbeddedInPdf: true)))
+            .Concat(otherFiles.Select(f => new AttachmentView(null, f.Description, f.Name, f.MimeType, f.Size, null, EmbeddedInPdf: true)))
             .ToList();
 
         var taxes = (d.Taxes ?? [])
