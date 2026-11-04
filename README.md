@@ -1,6 +1,6 @@
 # RechnungsWerk
 
-Freie Web-App für deutsche E-Rechnungen – gemacht für Kleinbetriebe, Vereine und Selbstständige.
+Freie Web-App für deutsche E-Rechnungen – aus Spaß gebaut und für alle, auch für Privatpersonen.
 RechnungsWerk läuft auf deinem eigenen Server: E-Rechnungen ansehen und drucken, mit dem offiziellen
 KoSIT-Validator prüfen, eigene Rechnungen als XRechnung oder ZUGFeRD erstellen und per E-Mail verschicken.
 
@@ -219,8 +219,8 @@ Verwendete Komponenten (jeweils unter eigener Lizenz):
 
 ## English summary
 
-RechnungsWerk is a free, self-hosted web app for German e-invoices (XRechnung and ZUGFeRD/Factur-X), aimed at small
-businesses, associations and freelancers. It can display and print incoming e-invoices, validate them with the
+RechnungsWerk is a free, self-hosted web app for German e-invoices (XRechnung and ZUGFeRD/Factur-X), built for fun
+and for everyone, private individuals included. It can display and print incoming e-invoices, validate them with the
 official KoSIT validator (running as a separate internal service), create invoices as XRechnung 3.0 UBL/CII or
 ZUGFeRD EN 16931 PDF/A-3, and send them through your own SMTP server with a per-invoice dispatch status.
 
