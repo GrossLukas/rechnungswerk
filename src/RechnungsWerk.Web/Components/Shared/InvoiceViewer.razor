@@ -1,7 +1,7 @@
 @* Lesbare Darstellung einer E-Rechnung – auch für den Ausdruck. *@
 <article class="invoice-sheet @(TitleOnlyInPrint ? "title-print-only" : null)" aria-label="Rechnung @View.Number">
     <header class="invoice-head">
-        <div>
+        <div class="invoice-heading">
             <h2 class="invoice-title">@View.TypeLabel @View.Number</h2>
         </div>
         <dl class="meta-list">

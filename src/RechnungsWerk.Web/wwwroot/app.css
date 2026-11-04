@@ -732,11 +732,8 @@ input[type="radio"] {
     margin: calc(-1 * var(--space-3)) 0 var(--space-4) calc(-1 * var(--space-3));
 }
 
+/* Fließtext: Die Zeile bricht als Satz um, nicht in einzelnen Stücken. */
 .status-line {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2);
     margin-bottom: var(--space-4);
     font-size: 14px;
     color: var(--color-text-secondary);
@@ -936,8 +933,15 @@ input[type="radio"] {
     font-weight: 700;
 }
 
-.title-print-only .invoice-title {
-    display: none;
+/* Zeigt der Seitenkopf schon die Nummer, bleibt die Überschrift für Screenreader und den Druck – ohne am Bildschirm
+   Platz zu belegen. So bleibt die Folge h1 → h2 → h3, und die Angaben daneben rücken an den Anfang. */
+.title-print-only .invoice-heading {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
 }
 
 .meta-list,
@@ -963,6 +967,12 @@ input[type="radio"] {
     color: var(--color-text-secondary);
 }
 
+/* Kurze Bezeichnungen wie „Leitweg-ID“ bleiben ganz; umbrechen darf der Wert. */
+.meta-list dt,
+.detail-list dt {
+    white-space: nowrap;
+}
+
 .meta-list dd,
 .detail-list dd,
 .totals-list dd {
@@ -975,10 +985,6 @@ input[type="radio"] {
 .totals-list dd {
     overflow-wrap: normal;
     white-space: nowrap;
-}
-
-.detail-list {
-    max-width: var(--form-width);
 }
 
 .detail-list.compact {
@@ -1391,8 +1397,13 @@ input[type="radio"] {
         overflow: visible;
     }
 
-    .title-print-only .invoice-title {
-        display: block;
+    .title-print-only .invoice-heading {
+        position: static;
+        width: auto;
+        height: auto;
+        overflow: visible;
+        clip: auto;
+        white-space: normal;
     }
 
     .table tr,
