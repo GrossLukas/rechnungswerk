@@ -252,11 +252,14 @@
 
     private void SelectCustomer(int? id)
     {
+        var previous = customers.FirstOrDefault(c => c.Id == form.CustomerId);
         form.CustomerId = id;
         var customer = customers.FirstOrDefault(c => c.Id == id);
-        if (customer is not null && string.IsNullOrWhiteSpace(form.BuyerReference))
+
+        // Den Vorschlag des vorigen Kunden ersetzen, eine eigene Eingabe aber behalten.
+        if (string.IsNullOrWhiteSpace(form.BuyerReference) || form.BuyerReference == previous?.BuyerReference)
         {
-            form.BuyerReference = customer.BuyerReference;
+            form.BuyerReference = customer?.BuyerReference;
         }
 
         if (customer is not null && Id is null && !string.IsNullOrWhiteSpace(customer.LeitwegId))
