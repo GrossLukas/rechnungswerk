@@ -7,7 +7,7 @@
 @inject NavigationManager Navigation
 @inject ILogger<InvoiceDetails> Logger
 
-<PageTitle>@(invoice?.Number ?? "Rechnung") – RechnungsWerk</PageTitle>
+<DocumentTitle Text="@(invoice?.Number ?? "Rechnung")" />
 
 @if (loading)
 {

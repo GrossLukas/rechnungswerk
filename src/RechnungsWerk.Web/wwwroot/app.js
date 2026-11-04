@@ -32,3 +32,11 @@ for (const type of ['dragenter', 'dragover']) {
 for (const type of ['dragleave', 'drop']) {
     document.addEventListener(type, (event) => dropzoneOf(event)?.classList.remove('is-dragover'));
 }
+
+// Aufrufe aus den Live-Seiten (JS-Interop).
+window.rechnungsWerk = {
+    // Live-Seiten zeichnen erst in der Verbindung; ihr <PageTitle> erreicht die statische HeadOutlet nie.
+    setTitle: (title) => {
+        document.title = title;
+    },
+};

@@ -1,0 +1,32 @@
+@inject IJSRuntime JS
+
+@* Titel im Browser-Tab. Vorab gezeichnete Seiten bekommen ihn über <PageTitle>; Live-Seiten zeichnen erst in der
+   Verbindung, ihr Titel erreicht die statische HeadOutlet nie – dort setzt ihn ein kleiner Helfer. *@
+<PageTitle>@FullTitle</PageTitle>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = "";
+
+    private string? applied;
+
+    private string FullTitle => $"{Text} – RechnungsWerk";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!RendererInfo.IsInteractive || applied == FullTitle)
+        {
+            return;
+        }
+
+        applied = FullTitle;
+        try
+        {
+            await JS.InvokeVoidAsync("rechnungsWerk.setTitle", FullTitle);
+        }
+        catch (JSDisconnectedException)
+        {
+            // Der Tab ist schon zu.
+        }
+    }
+}
