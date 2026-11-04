@@ -8,15 +8,42 @@ retryButton.addEventListener("click", retry);
 const resumeButton = document.getElementById("components-resume-button");
 resumeButton.addEventListener("click", resume);
 
-function handleReconnectStateChanged(event) {
-    if (event.detail.state === "show") {
+// Solange keine Verbindung besteht, bleibt der Hinweis offen: Esc schloss ihn sonst dauerhaft, und Eingaben liefen
+// ohne Hinweis ins Leere. Chrome schließt beim zweiten Esc trotz preventDefault – dann öffnet er sich gleich wieder.
+let shown = false;
+reconnectModal.addEventListener("cancel", (event) => event.preventDefault());
+reconnectModal.addEventListener("close", () => {
+    if (shown) {
         reconnectModal.showModal();
-    } else if (event.detail.state === "hide") {
-        reconnectModal.close();
-    } else if (event.detail.state === "failed") {
-        document.addEventListener("visibilitychange", retryWhenDocumentBecomesVisible);
-    } else if (event.detail.state === "rejected") {
+    }
+});
+
+function showModal() {
+    shown = true;
+    if (!reconnectModal.open) {
+        reconnectModal.showModal();
+    }
+}
+
+function hideModal() {
+    shown = false;
+    reconnectModal.close();
+}
+
+function handleReconnectStateChanged(event) {
+    const state = event.detail.state;
+    if (state === "hide") {
+        hideModal();
+    } else if (state === "rejected") {
         location.reload();
+    } else {
+        // show, retrying, failed, paused: Der Hinweis muss sichtbar sein, auch wenn er zwischendurch zu war.
+        showModal();
+        if (state === "failed") {
+            document.addEventListener("visibilitychange", retryWhenDocumentBecomesVisible);
+        } else if (state === "paused") {
+            resumeButton.textContent = "Fortsetzen";
+        }
     }
 }
 
@@ -36,7 +63,7 @@ async function retry() {
             if (!resumeSuccessful) {
                 location.reload();
             } else {
-                reconnectModal.close();
+                hideModal();
             }
         }
     } catch (err) {
@@ -53,6 +80,8 @@ async function resume() {
         }
     } catch {
         reconnectModal.classList.replace("components-reconnect-paused", "components-reconnect-resume-failed");
+        // Die Meldung sagt „lässt sich nicht fortsetzen“ – der Knopf versucht es noch einmal.
+        resumeButton.textContent = "Erneut versuchen";
     }
 }
 

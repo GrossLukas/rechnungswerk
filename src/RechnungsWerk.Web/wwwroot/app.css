@@ -1305,10 +1305,11 @@ input[type="radio"] {
     cursor: pointer;
 }
 
+/* Trennlinie statt Schatten: Im Dunkelmodus hätte der Hinweis sonst dieselbe Fläche wie die Seite dahinter. */
 #components-reconnect-modal {
     max-width: 320px;
     padding: var(--space-5);
-    border: 0;
+    border: 1px solid var(--color-separator);
     border-radius: var(--radius-lg);
     background: var(--color-bg);
     color: var(--color-text);
