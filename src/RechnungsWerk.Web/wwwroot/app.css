@@ -834,7 +834,8 @@ input[type="radio"] {
     width: auto;
 }
 
-.editor-totals {
+/* Doppelte Klasse: Die allgemeine Regel für Wertelisten (margin: 0) steht weiter unten und hob den Rand sonst auf. */
+.totals-list.editor-totals {
     width: min(100%, 320px);
     margin: var(--space-4) 0 0 auto;
 }
