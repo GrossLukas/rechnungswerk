@@ -116,6 +116,17 @@ public sealed class WebSecurityTests(RechnungsWerkAppFactory factory) : IClassFi
     }
 
     [Fact]
+    public async Task Pages_offer_light_and_dark_before_the_stylesheet_loads()
+    {
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var html = await client.GetStringAsync("/anzeigen", TestContext.Current.CancellationToken);
+
+        // Sonst malt der Browser im Dunkelmodus erst weiß, bis app.css geladen ist.
+        Assert.Contains("<meta name=\"color-scheme\" content=\"light dark\"", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Unknown_addresses_show_the_not_found_page()
     {
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
