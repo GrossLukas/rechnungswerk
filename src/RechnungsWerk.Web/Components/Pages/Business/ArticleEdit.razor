@@ -32,7 +32,7 @@
             }
         </InputSelect>
     </Field>
-    <Field Label="Preis netto (€)" For="() => form.UnitPrice"><InputNumber @bind-Value="form.UnitPrice" step="any" min="0" inputmode="decimal" /></Field>
+    <Field Label="Preis netto (€)" For="() => form.UnitPrice"><DecimalInput @bind-Value="form.UnitPrice" /></Field>
     <Field Label="Umsatzsteuer" For="() => form.VatRate">
         <InputSelect @bind-Value="form.VatRate">
             @foreach (var rate in VatRates.Allowed)

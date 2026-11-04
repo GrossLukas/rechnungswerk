@@ -87,14 +87,14 @@
                         <label><span class="line-label">Bezeichnung</span><InputText @bind-Value="line.Name" placeholder="Bezeichnung" /></label>
                         <label><span class="line-label">Beschreibung</span><InputText @bind-Value="line.Description" placeholder="Beschreibung" class="line-desc-input" /></label>
                     </div>
-                    <label class="line-cell"><span class="line-label">Menge</span><InputNumber @bind-Value="line.Quantity" step="any" min="0" inputmode="decimal" class="num" /></label>
+                    <label class="line-cell"><span class="line-label">Menge</span><DecimalInput @bind-Value="line.Quantity" DisplayName="Menge" class="num" /></label>
                     <label class="line-cell"><span class="line-label">Einheit</span><InputSelect @bind-Value="line.UnitCode">
                         @foreach (var (unitCode, unitLabel) in UnitCodes.Common)
                         {
                             <option value="@unitCode">@unitLabel</option>
                         }
                     </InputSelect></label>
-                    <label class="line-cell"><span class="line-label">Preis</span><InputNumber @bind-Value="line.UnitPrice" step="any" min="0" inputmode="decimal" class="num" /></label>
+                    <label class="line-cell"><span class="line-label">Preis</span><DecimalInput @bind-Value="line.UnitPrice" DisplayName="Preis" class="num" /></label>
                     @if (!smallBusiness)
                     {
                         <label class="line-cell"><span class="line-label">USt</span><InputSelect @bind-Value="line.VatRate">
