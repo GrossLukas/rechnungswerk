@@ -138,13 +138,15 @@ public sealed class WebSecurityTests(RechnungsWerkAppFactory factory) : IClassFi
     }
 
     [Fact]
-    public async Task Logout_without_antiforgery_token_is_rejected()
+    public async Task Logout_without_antiforgery_token_and_without_session_counts_as_done()
     {
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
         using var response = await client.PostAsync("/abmelden", new FormUrlEncodedContent([]), TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        // Kein leeres „HTTP ERROR 400“: Wer nicht (mehr) angemeldet ist, landet wieder bei der Anmeldung.
+        Assert.Equal(HttpStatusCode.SeeOther, response.StatusCode);
+        Assert.Equal("/anmelden", response.Headers.Location!.OriginalString);
     }
 
     [Fact]

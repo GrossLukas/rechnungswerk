@@ -11,7 +11,7 @@ public static class AppEndpoints
 {
     public static IEndpointRouteBuilder MapAppEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        // Abmelden nur per POST mit Antiforgery-Token (das Formular-Feld sorgt für die Prüfung).
+        // Abmelden nur per POST mit Antiforgery-Token (das Formular-Feld sorgt für die Prüfung; ungültige Token leitet Program.cs um).
         endpoints.MapPost("/abmelden", async ([FromForm] string? returnUrl, SignInManager<AppUser> signInManager) =>
         {
             await signInManager.SignOutAsync();

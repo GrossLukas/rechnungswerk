@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -118,6 +119,22 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
+
+// Abgelaufenes oder fremdes Antiforgery-Token (zweiter Tab, Sitzung abgelaufen): zurück auf eine frische Seite statt in
+// eine leere 400-Seite. Ausgeführt wird dabei nichts – Angemeldete bleiben angemeldet und gehen zur Startseite.
+app.Use(async (context, next) =>
+{
+    if (context.Features.Get<IAntiforgeryValidationFeature>() is { IsValid: false })
+    {
+        context.Response.StatusCode = StatusCodes.Status303SeeOther;
+        context.Response.Headers.Location = context.User.Identity?.IsAuthenticated == true ? "/"
+            : context.Request.Path.StartsWithSegments("/anmelden") ? $"{context.Request.Path}{context.Request.QueryString}"
+            : "/anmelden";
+        return;
+    }
+
+    await next(context);
+});
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
