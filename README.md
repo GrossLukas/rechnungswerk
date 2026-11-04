@@ -65,7 +65,7 @@ Die erzeugten Dateien werden in den automatischen Tests mit dem KoSIT-Validator 
 
 ## Schnellstart mit Docker Compose
 
-Ausführliche Anleitung für Windows, macOS und Linux: [docs/installation.md](docs/installation.md)
+Schritt für Schritt für Windows, macOS und Linux: [Installationsanleitung](docs/installation.md)
 
 Voraussetzung: Docker mit Compose-Plugin.
 
@@ -103,9 +103,9 @@ Die Einstellungen kommen aus Umgebungsvariablen (oder `appsettings.json`):
 
 ### HTTPS
 
-RechnungsWerk selbst spricht nur HTTP. Wenn die App nicht nur im eigenen Netz läuft, gehört ein Reverse Proxy mit
-HTTPS davor (z. B. Caddy, Traefik oder nginx). Setze dann `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` und gib Port 8080
-nicht direkt nach außen frei.
+RechnungsWerk selbst spricht nur HTTP, und Compose gibt Port 8080 nur lokal frei (`127.0.0.1:8080`). Für den Zugriff
+von anderen Geräten gehört ein Reverse Proxy mit HTTPS davor (z. B. Caddy, Traefik oder nginx). Setze dann
+`ASPNETCORE_FORWARDEDHEADERS_ENABLED=true`.
 
 ### E-Mail-Versand (SMTP)
 
@@ -132,16 +132,9 @@ Alles Wichtige liegt im Datenordner (`/data`, in Compose das Volume `rechnungswe
 - `keys/` – DataProtection-Schlüssel; ohne sie lässt sich das gespeicherte SMTP-Passwort nicht mehr entschlüsseln
   (du musst es dann neu eintragen) und alle müssen sich neu anmelden
 
-Sichere den Ordner vollständig und am besten bei gestoppter Web-App, z. B.:
-
-```bash
-docker compose stop web
-docker run --rm -v rechnungswerk_rechnungswerk-data:/data -v "$PWD":/backup busybox \
-  tar czf /backup/rechnungswerk-daten.tgz -C /data .
-docker compose start web
-```
-
-Die Schlüssel liegen unverschlüsselt im Datenordner – schütze die Sicherung entsprechend.
+Sichere den Ordner vollständig und bei gestoppter Web-App. Die Befehle zum Sichern und Zurückspielen stehen in der
+[Installationsanleitung](docs/installation.md#datensicherung). Die Schlüssel liegen unverschlüsselt im Datenordner –
+schütze die Sicherung entsprechend.
 
 ## Datenschutz
 

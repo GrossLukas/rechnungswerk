@@ -1,16 +1,16 @@
 # RechnungsWerk: Web-App und KoSIT-Validator. Start: docker compose up -d --build
-# Fester Projektname: Container, Netze und das Daten-Volume (rechnungswerk_rechnungswerk-data) heißen in jedem Ordner
-# gleich, damit eine neu entpackte Version die bisherigen Daten findet. Eine zweite, getrennte Instanz braucht deshalb
-# "docker compose -p <name> ..." und einen anderen Port.
+# Fester Projektname: Container, Images, Netze und das Daten-Volume (rechnungswerk_rechnungswerk-data) heißen in jedem
+# Ordner gleich, damit eine neu entpackte Version die bisherigen Daten findet. Eine zweite, getrennte Instanz braucht
+# deshalb "docker compose -p <name> ..." und einen anderen Port.
 name: rechnungswerk
 
 services:
   web:
     build: .
-    image: rechnungswerk-web:local
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      # Nur von diesem Rechner aus erreichbar; für andere Geräte gehört ein Reverse Proxy mit HTTPS davor.
+      - "127.0.0.1:8080:8080"
     environment:
       Validator__Url: http://validator:8080/
       # Hinter einem Reverse Proxy mit HTTPS (empfohlen) einschalten, damit die App das Original-Protokoll kennt:
@@ -34,7 +34,6 @@ services:
 
   validator:
     build: docker/validator
-    image: rechnungswerk-validator:local
     restart: unless-stopped
     # Kein Port nach außen: Der Validator ist nur für die Web-App im internen Netz erreichbar.
     expose:
