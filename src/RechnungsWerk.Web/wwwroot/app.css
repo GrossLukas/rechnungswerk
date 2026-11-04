@@ -1391,6 +1391,11 @@ input[type="radio"] {
     .dropzone {
         min-height: 240px;
     }
+
+    /* Über der Tab-Leiste, damit die Navigation erreichbar bleibt. */
+    #blazor-error-ui {
+        bottom: calc(52px + 2 * var(--space-1) + 1px + env(safe-area-inset-bottom));
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
