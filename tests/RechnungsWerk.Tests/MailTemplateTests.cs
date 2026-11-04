@@ -47,4 +47,21 @@ public sealed class MailTemplateTests
         Assert.Contains("17.11.2026", body, StringComparison.Ordinal);
         Assert.DoesNotContain("{", body, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Default_template_without_due_date_asks_for_payment_right_away()
+    {
+        var body = MailTemplate.Render(MailTemplate.DefaultBody, Values with { DueDate = null });
+
+        Assert.Contains("Bitte überweisen Sie den Betrag sofort.", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("bis zum", body, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("zahlbar bis {faelligkeit}", "zahlbar sofort")]
+    [InlineData("Fällig: {Fälligkeit}", "Fällig: sofort")]
+    public void Due_date_placeholder_without_due_date_reads_sofort(string template, string expected)
+    {
+        Assert.Equal(expected, MailTemplate.Render(template, Values with { DueDate = null }));
+    }
 }

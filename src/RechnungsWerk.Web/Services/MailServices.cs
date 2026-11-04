@@ -180,7 +180,7 @@ public sealed class InvoiceMailService(
             invoice.Number,
             invoice.CustomerName,
             GermanFormat.Money(invoice.GrandTotal, invoice.Currency),
-            invoice.DueDate is { } due ? GermanFormat.Date(due) : "sofort",
+            invoice.DueDate is { } due ? GermanFormat.Date(due) : null,
             invoice.Seller.Name);
         GeneratedFile file;
         try
