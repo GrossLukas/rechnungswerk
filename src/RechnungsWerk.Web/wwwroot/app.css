@@ -1204,6 +1204,16 @@ input[type="radio"] {
     max-width: var(--document-width);
 }
 
+.print-only {
+    display: none;
+}
+
+.report-source {
+    margin-bottom: var(--space-4);
+    color: var(--color-text-secondary);
+    overflow-wrap: anywhere;
+}
+
 .verdict {
     display: flex;
     align-items: center;
@@ -1505,6 +1515,10 @@ input[type="radio"] {
     /* Papier rollt nicht: Was übersteht, würde abgeschnitten. */
     .table-wrap {
         overflow: visible;
+    }
+
+    .print-only {
+        display: block;
     }
 
     .title-print-only .invoice-heading {

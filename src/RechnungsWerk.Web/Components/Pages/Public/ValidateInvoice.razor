@@ -31,6 +31,8 @@ else if (report is null)
 }
 else
 {
+    @* Der Seitenkopf fehlt im Druck – auf Papier sagt diese Zeile, was wann geprüft wurde. *@
+    <p class="print-only report-source">@fileName · geprüft am @Display.Timestamp(checkedAt)</p>
     <ValidationReportView Report="report" />
 }
 
@@ -38,6 +40,8 @@ else
     private ValidationReport? report;
     private string? error;
     private string? announcement;
+    private string? fileName;
+    private DateTime checkedAt;
     private bool busy;
 
     private async Task ValidateAsync(InputFileChangeEventArgs e)
@@ -48,6 +52,8 @@ else
         try
         {
             report = await BrowserFiles.ProcessAsync(e.File, content => Validator.ValidateAsync(Reader.ExtractXml(content)));
+            fileName = e.File.Name;
+            checkedAt = DateTime.UtcNow;
             // Die Ablage ist weg – der Fokus geht an den Anfang des Ergebnisses.
             FocusAfterRender("main h1");
             var groups = string.Join(", ", FindingGroup.Of(report).Select(g => g.Title));
