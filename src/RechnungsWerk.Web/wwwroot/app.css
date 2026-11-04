@@ -635,6 +635,13 @@ input[type="radio"] {
     color: var(--color-success);
 }
 
+/* Testmail: eigener Abschnitt unter dem Formular, durch eine Linie getrennt. */
+.test-mail {
+    margin-top: var(--space-6);
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--color-separator);
+}
+
 .preview {
     margin: -8px 0 var(--space-4);
     font-family: var(--font-mono);
@@ -1365,6 +1372,11 @@ input[type="radio"] {
     .parties {
         grid-template-columns: minmax(0, 1fr);
         gap: 0;
+    }
+
+    /* Feld und Knopf untereinander brauchen trotzdem Abstand. */
+    .field-row-action {
+        gap: var(--space-3);
     }
 
     .parties {
