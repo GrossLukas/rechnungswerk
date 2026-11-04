@@ -153,6 +153,16 @@ h1:focus,
     display: none;
 }
 
+/* Nur für Screenreader, z. B. Meldungen in einer Live-Region. */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
+
 /* ---------- App-Rahmen ---------- */
 .shell {
     display: grid;

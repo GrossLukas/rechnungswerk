@@ -5,6 +5,7 @@
         <Icon Name="upload" />
         <span>@(Busy ? "Wird gelesen …" : "E-Rechnung hierher ziehen oder klicken")</span>
     </label>
+    <span class="visually-hidden" role="status">@(Busy ? "Wird gelesen …" : null)</span>
 </div>
 
 @code {

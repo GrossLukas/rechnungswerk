@@ -35,10 +35,13 @@ else
             </ListRow>
         }
     </ul>
-    @if (!Filtered.Any())
-    {
-        <p class="muted">Keine Treffer.</p>
-    }
+    @* Von Anfang an da, damit Screenreader „Keine Treffer“ ansagen. *@
+    <div role="status">
+        @if (!Filtered.Any())
+        {
+            <p class="muted">Keine Treffer.</p>
+        }
+    </div>
 }
 
 @code {

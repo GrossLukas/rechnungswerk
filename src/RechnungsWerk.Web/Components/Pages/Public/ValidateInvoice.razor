@@ -7,6 +7,9 @@
 
 <PageTitle>Prüfen – RechnungsWerk</PageTitle>
 
+@* Von Anfang an da und leer: Nur so sagen Screenreader spätere Meldungen sicher an. *@
+<p class="visually-hidden" role="status">@announcement</p>
+
 <PageHeader Title="Prüfen">
     <Action>
         @if (report is not null)
@@ -34,17 +37,21 @@ else
 @code {
     private ValidationReport? report;
     private string? error;
+    private string? announcement;
     private bool busy;
 
     private async Task ValidateAsync(InputFileChangeEventArgs e)
     {
         error = null;
+        announcement = null;
         busy = true;
         try
         {
             report = await BrowserFiles.ProcessAsync(e.File, content => Validator.ValidateAsync(Reader.ExtractXml(content)));
             // Die Ablage ist weg – der Fokus geht an den Anfang des Ergebnisses.
             FocusAfterRender("main h1");
+            var groups = string.Join(", ", FindingGroup.Of(report).Select(g => g.Title));
+            announcement = (report.IsAcceptable ? "Gültig" : "Nicht gültig") + (groups.Length > 0 ? $": {groups}" : "");
         }
         catch (EInvoiceReadException ex)
         {
@@ -75,6 +82,7 @@ else
     {
         report = null;
         error = null;
+        announcement = null;
         FocusAfterRender(".dropzone input");
     }
 }

@@ -6,6 +6,9 @@
 
 <PageTitle>Anzeigen – RechnungsWerk</PageTitle>
 
+@* Von Anfang an da und leer: Nur so sagen Screenreader spätere Meldungen sicher an. *@
+<p class="visually-hidden" role="status">@announcement</p>
+
 <PageHeader Title="Anzeigen">
     <Action>
         @if (view is not null)
@@ -29,11 +32,13 @@ else
 @code {
     private InvoiceView? view;
     private string? error;
+    private string? announcement;
     private bool busy;
 
     private async Task LoadAsync(InputFileChangeEventArgs e)
     {
         error = null;
+        announcement = null;
         busy = true;
         try
         {
@@ -41,6 +46,7 @@ else
             view = await BrowserFiles.ProcessAsync(e.File, content => Task.FromResult(Reader.Read(content).View));
             // Die Ablage ist weg – der Fokus geht an den Anfang des Ergebnisses.
             FocusAfterRender("main h1");
+            announcement = $"{view.TypeLabel} {view.Number}";
         }
         catch (EInvoiceReadException ex)
         {
@@ -67,6 +73,7 @@ else
     {
         view = null;
         error = null;
+        announcement = null;
         FocusAfterRender(".dropzone input");
     }
 }

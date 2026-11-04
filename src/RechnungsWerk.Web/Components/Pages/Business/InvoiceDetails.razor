@@ -9,6 +9,9 @@
 
 <DocumentTitle Text="@(invoice?.Number ?? "Rechnung")" />
 
+@* Von Anfang an da und leer: Nur so sagen Screenreader spätere Meldungen sicher an. *@
+<p class="visually-hidden" role="status">@announcement</p>
+
 @if (loading)
 {
     return;
@@ -150,6 +153,7 @@ else if (renderError is not null)
     private ServiceResult? sendResult;
     private string? checkError;
     private string? renderError;
+    private string? announcement;
     private string? recipient;
     private EInvoiceFormat sendFormat;
     private bool loading = true;
@@ -237,6 +241,7 @@ else if (renderError is not null)
         }
 
         sending = true;
+        announcement = null;
         try
         {
             sendResult = await Mail.SendInvoiceAsync(Id, sendFormat, recipient);
@@ -244,6 +249,7 @@ else if (renderError is not null)
             sendOpen = !sendResult.Succeeded;
             if (sendResult.Succeeded)
             {
+                announcement = "Rechnung versendet";
                 // Der Versandbereich ist zu – weiter geht es am Knopf „Erneut senden“.
                 FocusAfterRender(".page-action .button-primary");
             }
@@ -263,6 +269,7 @@ else if (renderError is not null)
 
         checking = true;
         checkError = null;
+        announcement = null;
         reports.Clear();
         try
         {
@@ -271,6 +278,8 @@ else if (renderError is not null)
                 var file = Invoices.Render(invoice, format);
                 reports[format] = await Validator.ValidateAsync(Reader.ExtractXml(file.Content));
             }
+
+            announcement = string.Join(", ", reports.Select(r => $"{r.Key.Label()}: {(r.Value.IsAcceptable ? "gültig" : "nicht gültig")}"));
         }
         catch (Exception ex) when (ex is ValidatorUnavailableException or EInvoiceWriteException)
         {

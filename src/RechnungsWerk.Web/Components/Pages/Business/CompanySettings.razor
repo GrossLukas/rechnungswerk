@@ -13,10 +13,7 @@
         <ModelValidator />
         <CompanyFields Model="form" />
         <div class="form-actions">
-            @if (saved)
-            {
-                <span class="saved" role="status">Gespeichert</span>
-            }
+            <span class="saved" role="status">@(saved ? "Gespeichert" : null)</span>
             <button type="submit" class="button button-primary" aria-disabled="@(saving ? "true" : null)">Speichern</button>
         </div>
     </EditForm>
