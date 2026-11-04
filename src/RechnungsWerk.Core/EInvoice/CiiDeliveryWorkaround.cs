@@ -65,6 +65,9 @@ internal static class CiiDeliveryWorkaround
         }
 
         file.Stream.Value = Filtering.FlateDecode.Encode(fixedXml);
+        // Der neue Inhalt ist immer Flate-komprimiert – unabhängig davon, wie die Bibliothek den Anhang geschrieben hat.
+        file.Elements.SetName("/Filter", "/FlateDecode");
+        file.Elements.Remove("/DecodeParms");
         var parameters = Resolve(file.Elements["/Params"]) as PdfDictionary
             ?? throw new InvalidOperationException("Der Rechnungsanhang im ZUGFeRD-PDF hat keine /Params.");
         parameters.Elements["/Size"] = new PdfInteger(fixedXml.Length);
