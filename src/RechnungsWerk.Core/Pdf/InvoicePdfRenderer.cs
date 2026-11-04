@@ -52,6 +52,7 @@ public sealed class InvoicePdfRenderer
         private PdfPage page = null!;
         private XGraphics gfx = null!;
         private double y;
+        private double headerBottom;
 
         private static XFont Font(double size, bool bold = false) =>
             new(EmbeddedFontResolver.FamilyName, size, bold ? XFontStyleEx.Bold : XFontStyleEx.Regular, FontOptions);
@@ -132,13 +133,19 @@ public sealed class InvoicePdfRenderer
                 lines.Add(CodeLabels.Country(doc.Buyer.CountryCode).ToUpperInvariant());
             }
 
+            // Name und Anschrift des Empfängers sind Pflichtangaben (§ 14 Abs. 4 UStG): umbrechen statt kürzen.
             var font = Font(10);
             var lineY = 55 * Mm;
             foreach (var line in lines.Where(l => !string.IsNullOrWhiteSpace(l)))
             {
-                Text(Fit(line, font, 85 * Mm), font, ink, Left, lineY);
-                lineY += 4.6 * Mm;
+                foreach (var part in Wrap(line, font, 85 * Mm))
+                {
+                    Text(part, font, ink, Left, lineY);
+                    lineY += 4.6 * Mm;
+                }
             }
+
+            headerBottom = Math.Max(headerBottom, lineY);
         }
 
         private void DrawInfoBlock()
@@ -187,15 +194,24 @@ public sealed class InvoicePdfRenderer
             var rowY = 50 * Mm;
             foreach (var (label, value) in rows)
             {
+                // Lange Referenzen brechen um; sie stehen vollständig auch im eingebetteten XML.
                 Text(label, labelFont, muted, 118 * Mm, rowY);
-                TextRight(Fit(value, valueFont, 40 * Mm), valueFont, ink, Right, rowY);
-                rowY += 5 * Mm;
+                foreach (var part in Wrap(value, valueFont, 40 * Mm))
+                {
+                    TextRight(part, valueFont, ink, Right, rowY);
+                    rowY += 3.8 * Mm;
+                }
+
+                rowY += 1.2 * Mm;
             }
+
+            headerBottom = Math.Max(headerBottom, rowY);
         }
 
         private void DrawTitleAndNote()
         {
-            y = 100 * Mm;
+            // Der Titel rückt nur nach unten, wenn Anschrift oder Angaben rechts mehr Zeilen brauchen.
+            y = Math.Max(100 * Mm, headerBottom + 6 * Mm);
             Text($"Rechnung {doc.Number}", Font(16, bold: true), ink, Left, y);
             y += 10 * Mm;
 
@@ -471,13 +487,19 @@ public sealed class InvoicePdfRenderer
                         yield return line;
                     }
 
-                    // Überlange Wörter (z. B. Artikelnummern) hart umbrechen.
+                    // Überlange Wörter (z. B. Artikel- oder Bestellnummern) hart umbrechen, wenn möglich nach einem Bindestrich.
                     while (word.Length > 1 && gfx.MeasureString(word, font).Width > maxWidth)
                     {
                         var cut = word.Length - 1;
                         while (cut > 1 && gfx.MeasureString(word[..cut], font).Width > maxWidth)
                         {
                             cut--;
+                        }
+
+                        var hyphen = word.LastIndexOf('-', cut - 1);
+                        if (hyphen > 0)
+                        {
+                            cut = hyphen + 1;
                         }
 
                         yield return word[..cut];

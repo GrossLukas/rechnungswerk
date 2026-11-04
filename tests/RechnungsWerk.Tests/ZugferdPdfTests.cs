@@ -100,6 +100,53 @@ public sealed class ZugferdPdfTests
         Assert.Contains("/FontFile2", text, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Long_buyer_names_and_references_are_wrapped_instead_of_cut_off()
+    {
+        var sample = TestInvoices.Sample();
+        var document = sample with
+        {
+            OrderReference = "BE-2026-11-04-000123456-KST",
+            Buyer = sample.Buyer with
+            {
+                Name = "Landesamt für Umwelt, Naturschutz und Geologie Mecklenburg-Vorpommern",
+                Street = "Abteilung Zentrale Dienste, Goldberger Straße 12–14, Haus B",
+                LeitwegId = null,
+                CustomerNumber = "K-2026-0000000000000000000000000000000000000001",
+            },
+            Lines = [new InvoiceLineItem { Name = "Beratung", Quantity = 1m, UnitCode = "C62", UnitPrice = 100m, VatRate = 19m }],
+        };
+
+        var pdf = new InvoicePdfRenderer().Render(document, InvoiceCalculator.Calculate(document));
+
+        // Gekürzt wurde mit „…“ – steht das Zeichen nicht in der eingebetteten Schrift, ist nichts abgeschnitten.
+        Assert.DoesNotContain('…', UsedCharacters(pdf));
+    }
+
+    /// <summary>Alle Zeichen, die das PDF laut ToUnicode-Tabellen seiner Schriften tatsächlich zeichnet.</summary>
+    private static HashSet<char> UsedCharacters(byte[] pdf)
+    {
+        using var document = PdfReader.Open(new MemoryStream(pdf), PdfDocumentOpenMode.Import);
+        var used = new HashSet<char>();
+        foreach (var font in document.Internals.GetAllObjects().OfType<PdfDictionary>().Where(d => d.Elements.ContainsKey("/ToUnicode")))
+        {
+            var map = Encoding.ASCII.GetString(Assert.IsType<PdfDictionary>(Resolve(font.Elements["/ToUnicode"])).Stream.UnfilteredValue);
+            foreach (System.Text.RegularExpressions.Match range in System.Text.RegularExpressions.Regex.Matches(
+                         map, "<([0-9A-Fa-f]{4})>\\s*<([0-9A-Fa-f]{4})>\\s*<([0-9A-Fa-f]{4})>"))
+            {
+                var low = Convert.ToInt32(range.Groups[1].Value, 16);
+                var high = Convert.ToInt32(range.Groups[2].Value, 16);
+                var target = Convert.ToInt32(range.Groups[3].Value, 16);
+                for (var glyph = low; glyph <= high; glyph++)
+                {
+                    used.Add((char)(target + glyph - low));
+                }
+            }
+        }
+
+        return used;
+    }
+
     private static (string Info, string Xmp) Metadata(byte[] pdf)
     {
         using var document = PdfReader.Open(new MemoryStream(pdf), PdfDocumentOpenMode.Import);
