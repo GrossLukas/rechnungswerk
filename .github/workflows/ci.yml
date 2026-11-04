@@ -107,3 +107,105 @@ jobs:
         run: |
           docker logs validator || true
           docker logs web || true
+
+  install-guide:
+    name: Installationsanleitung durchspielen
+    runs-on: ubuntu-latest
+    needs: build-test
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Starten, sichern, zurückspielen, übernehmen, aktualisieren und entfernen
+        run: |
+          set -x -o pipefail
+          # Die Befehle zum Sichern, Zurückspielen und Übernehmen kommen wörtlich aus der Anleitung.
+          guide() {
+            local line
+            line=$(grep -F -- "$1" docs/installation.md) || return 1
+            [ "$(printf '%s\n' "$line" | wc -l)" -eq 1 ] || return 1
+            printf '%s\n' "$line"
+          }
+          backup=$(guide 'echo Sicherung erstellt"')
+          restore=$(guide 'echo Sicherung eingespielt"')
+          migrate=$(guide 'echo Daten kopiert"')
+
+          wait_for_web() {
+            for attempt in $(seq 1 30); do
+              if curl -fsS -o /dev/null http://localhost:8080/einrichtung; then return 0; fi
+              sleep 2
+            done
+            return 1
+          }
+          setup_code() { docker compose exec -T web cat /data/setup-code.txt; }
+
+          docker pull busybox
+          docker compose up -d --build 2>&1 | tee compose-up.log
+          grep -E 'rechnungswerk-web-1[[:space:]]+Started' compose-up.log
+          wait_for_web
+          code=$(setup_code)
+          test -n "$code"
+
+          if curl -fsS -o /dev/null --max-time 5 "http://$(hostname -I | awk '{print $1}'):8080/einrichtung"; then
+            echo "::error::Port 8080 ist nicht nur von diesem Rechner aus erreichbar."
+            exit 1
+          fi
+
+          docker compose stop web
+          test "$(eval "$backup")" = "Sicherung erstellt"
+          docker compose start web
+
+          # Ohne Code-Datei legt die App beim Start einen neuen Code an; das Zurückspielen muss den alten bringen.
+          docker compose stop web
+          docker run --rm -v rechnungswerk_rechnungswerk-data:/data busybox rm /data/setup-code.txt
+          docker compose start web
+          wait_for_web
+          new_code=$(setup_code)
+          test "$new_code" != "$code"
+
+          docker compose stop web
+          test "$(eval "$restore")" = "Sicherung eingespielt"
+          docker compose start web
+          wait_for_web
+          test "$(setup_code)" = "$code"
+
+          # Eine abgeschnittene Sicherung darf die vorhandenen Daten nicht anrühren.
+          mv rechnungswerk-daten.tgz vollstaendig.tgz
+          head -c "$(( $(wc -c < vollstaendig.tgz) / 2 ))" vollstaendig.tgz > rechnungswerk-daten.tgz
+          docker compose stop web
+          if eval "$restore"; then
+            echo "::error::Eine abgeschnittene Sicherung wurde eingespielt."
+            exit 1
+          fi
+          docker compose start web
+          wait_for_web
+          test "$(setup_code)" = "$code"
+
+          # Daten aus einem Volume mit dem früheren, vom Ordner abgeleiteten Namen übernehmen.
+          docker compose stop web
+          docker run --rm -v rechnungswerk_rechnungswerk-data:/data -v rechnungswerk-main_rechnungswerk-data:/alt busybox cp -a /data/. /alt/
+          docker run --rm -v rechnungswerk_rechnungswerk-data:/data busybox sh -c "rm -rf /data/*"
+          test "$(eval "$migrate")" = "Daten kopiert"
+          docker compose start web
+          wait_for_web
+          test "$(setup_code)" = "$code"
+          docker volume rm rechnungswerk-main_rechnungswerk-data
+
+          # Aktualisieren behält die Daten.
+          docker compose down
+          docker compose build --pull
+          docker compose up -d
+          wait_for_web
+          test "$(setup_code)" = "$code"
+
+          docker compose down --volumes --rmi all
+          if docker volume inspect rechnungswerk_rechnungswerk-data > /dev/null 2>&1; then
+            echo "::error::Das Daten-Volume ist nach dem Entfernen noch da."
+            exit 1
+          fi
+
+      - name: Container-Protokolle bei Fehlern
+        if: failure()
+        run: docker compose logs || true
