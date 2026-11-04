@@ -907,7 +907,8 @@ input[type="radio"] {
 }
 
 .party h3,
-.invoice-section h3 {
+.invoice-section h3,
+.findings-title {
     margin-bottom: var(--space-2);
     font-size: var(--text-sm);
     font-weight: 600;
@@ -1313,6 +1314,10 @@ input[type="radio"] {
     .finding,
     .party {
         break-inside: avoid;
+    }
+
+    .findings-title {
+        break-after: avoid;
     }
 
     a {

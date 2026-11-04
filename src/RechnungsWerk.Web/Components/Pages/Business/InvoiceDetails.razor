@@ -123,7 +123,7 @@ else if (invoice.LastMailError is not null && invoice.SentAt is null)
         @foreach (var (format, report) in reports.Where(r => !r.Value.IsAcceptable || r.Value.WarningCount > 0))
         {
             <h2 class="section-title">@format.Label()</h2>
-            <ValidationReportView Report="report" />
+            <ValidationReportView Report="report" HeadingLevel="3" />
         }
     </section>
 }

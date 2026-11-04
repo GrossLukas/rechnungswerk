@@ -43,7 +43,7 @@ Die erzeugten Dateien werden in den automatischen Tests mit dem KoSIT-Validator 
     <td width="50%">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/pruefen-dark.png">
-        <img src="docs/screenshots/pruefen-light.png" alt="Prüfen: Prüfbericht des KoSIT-Validators für eine fehlerhafte Rechnung – nicht gültig, jeder Fund mit Regel-ID wie BR-DE-15, deutscher Erklärung und Fundstelle">
+        <img src="docs/screenshots/pruefen-light.png" alt="Prüfen: Prüfbericht des KoSIT-Validators für eine fehlerhafte Rechnung – nicht gültig, Funde nach Fehlern und Warnungen gruppiert, jeweils mit Regel-ID wie BR-DE-15, deutscher Erklärung und Fundstelle">
       </picture>
     </td>
   </tr>

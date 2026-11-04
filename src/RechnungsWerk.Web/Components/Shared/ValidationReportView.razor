@@ -13,10 +13,18 @@
         </p>
     }
 
-    @if (Report.Messages.Count > 0)
+    @foreach (var group in FindingGroup.Of(Report))
     {
+        @if (HeadingLevel == 3)
+        {
+            <h3 class="findings-title">@group.Title</h3>
+        }
+        else
+        {
+            <h2 class="findings-title">@group.Title</h2>
+        }
         <ol class="findings">
-            @foreach (var message in Report.Messages.OrderBy(m => m.Level))
+            @foreach (var message in group.Messages)
             {
                 <li class="finding finding-@Css(message.Level)">
                     <p class="finding-title">
@@ -40,6 +48,10 @@
 @code {
     [Parameter, EditorRequired]
     public ValidationReport Report { get; set; } = default!;
+
+    /// <summary>Ebene der Gruppenüberschriften: 2 auf der Prüfseite, 3 unter der Formatüberschrift einer Rechnung.</summary>
+    [Parameter]
+    public int HeadingLevel { get; set; } = 2;
 
     private static string Css(ValidationLevel level) => level switch
     {
