@@ -49,6 +49,9 @@ else
 }
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
+
     private readonly SetupForm form = new();
     private ServiceResult? result;
     private bool loading = true;
@@ -58,6 +61,13 @@ else
     protected override async Task OnInitializedAsync()
     {
         setupRequired = await Setup.IsSetupRequiredAsync();
+        if (!setupRequired && AuthenticationState is not null && (await AuthenticationState).User.Identity?.IsAuthenticated == true)
+        {
+            // Wer schon angemeldet ist, landet bei der Arbeit statt bei „Melde dich an“.
+            Navigation.NavigateTo("rechnungen");
+            return;
+        }
+
         if (setupRequired)
         {
             // Wurde die Code-Datei gelöscht, entsteht hier ein neuer Code.
