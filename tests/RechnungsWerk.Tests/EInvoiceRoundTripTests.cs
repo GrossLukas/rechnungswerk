@@ -1,4 +1,5 @@
 using System.Text;
+using System.Xml.Linq;
 using RechnungsWerk.Core.EInvoice;
 using RechnungsWerk.Core.Invoicing;
 
@@ -6,6 +7,10 @@ namespace RechnungsWerk.Tests;
 
 public sealed class EInvoiceRoundTripTests
 {
+    private static readonly XNamespace Rsm = "urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100";
+    private static readonly XNamespace Ram = "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100";
+    private static readonly XNamespace Udt = "urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100";
+
     private readonly EInvoiceWriter writer = new();
     private readonly EInvoiceReader reader = new();
 
@@ -95,5 +100,38 @@ public sealed class EInvoiceRoundTripTests
         Assert.False(view.BuyerReferenceIsLeitwegId);
         Assert.Equal("einkauf@musterhausen.example", view.Buyer.ElectronicAddress);
         Assert.Equal("E-Mail", view.Buyer.ElectronicAddressLabel);
+    }
+
+    [Theory]
+    [InlineData(EInvoiceFormat.XRechnungCii)]
+    [InlineData(EInvoiceFormat.ZugferdPdf)]
+    public void Service_period_keeps_the_mandatory_cii_delivery_element(EInvoiceFormat format)
+    {
+        var xml = reader.ExtractXml(writer.Write(TestInvoices.WithServicePeriod(), format));
+
+        var transaction = SecureXml.Load(xml).Root?.Element(Rsm + "SupplyChainTradeTransaction");
+        Assert.NotNull(transaction);
+        // Das CII-Schema verlangt die Lieferangaben zwischen Vereinbarung und Abrechnung – auch wenn sie leer sind.
+        Assert.Equal(
+            ["ApplicableHeaderTradeAgreement", "ApplicableHeaderTradeDelivery", "ApplicableHeaderTradeSettlement"],
+            transaction.Elements().Select(e => e.Name.LocalName).Where(name => name.StartsWith("ApplicableHeaderTrade", StringComparison.Ordinal)));
+
+        // Kein erfundenes Lieferdatum und keine Lieferanschrift: Der Zeitraum steht als Abrechnungszeitraum (BG-14) in der Abrechnung.
+        Assert.Empty(transaction.Element(Ram + "ApplicableHeaderTradeDelivery")!.Elements());
+        var period = transaction.Element(Ram + "ApplicableHeaderTradeSettlement")?.Element(Ram + "BillingSpecifiedPeriod");
+        Assert.Equal(["20261001", "20261031"], period?.Descendants(Udt + "DateTimeString").Select(d => d.Value) ?? []);
+    }
+
+    [Theory]
+    [MemberData(nameof(AllFormats))]
+    public void Service_period_reads_back_without_a_delivery_date(EInvoiceFormat format, bool smallBusiness)
+    {
+        var document = TestInvoices.WithServicePeriod(smallBusiness);
+
+        var view = reader.Read(writer.Write(document, format)).View;
+
+        Assert.Null(view.DeliveryDate);
+        Assert.Equal(document.ServicePeriodStart, view.PeriodStart);
+        Assert.Equal(document.ServicePeriodEnd, view.PeriodEnd);
     }
 }

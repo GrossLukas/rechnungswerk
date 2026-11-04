@@ -27,10 +27,10 @@ public sealed class EInvoiceWriter(InvoicePdfRenderer pdfRenderer)
         {
             case EInvoiceFormat.XRechnungUbl:
                 descriptor.Save(output, ZUGFeRDVersion.Version23, Profile.XRechnung, ZUGFeRDFormats.UBL);
-                break;
+                return output.ToArray();
             case EInvoiceFormat.XRechnungCii:
                 descriptor.Save(output, ZUGFeRDVersion.Version23, Profile.XRechnung, ZUGFeRDFormats.CII);
-                break;
+                return CiiDeliveryWorkaround.Apply(output.ToArray());
             case EInvoiceFormat.ZugferdPdf:
                 var visiblePdf = pdfRenderer.Render(document, calculation);
                 using (var source = new MemoryStream(visiblePdf, writable: false))
@@ -39,12 +39,10 @@ public sealed class EInvoiceWriter(InvoicePdfRenderer pdfRenderer)
                     InvoicePdfProcessor.SaveToPdf(output, ZUGFeRDVersion.Version23, Profile.Comfort, ZUGFeRDFormats.CII, source, descriptor);
                 }
 
-                break;
+                return CiiDeliveryWorkaround.ApplyToPdf(output.ToArray());
             default:
                 throw new ArgumentOutOfRangeException(nameof(format));
         }
-
-        return output.ToArray();
     }
 
     internal static InvoiceDescriptor BuildDescriptor(InvoiceDocument doc, InvoiceCalculation calc)

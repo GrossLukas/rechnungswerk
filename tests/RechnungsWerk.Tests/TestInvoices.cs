@@ -49,4 +49,12 @@ internal static class TestInvoices
             new InvoiceLineItem { Name = "Schulung Mitarbeitende", Quantity = 1m, UnitCode = "LS", UnitPrice = 250m, VatRate = 0m },
         ],
     };
+
+    /// <summary>Dieselbe Rechnung mit Leistungszeitraum statt Leistungsdatum – ohne Lieferdatum und ohne Lieferanschrift.</summary>
+    public static InvoiceDocument WithServicePeriod(bool smallBusiness = false) => Sample(smallBusiness) with
+    {
+        DeliveryDate = null,
+        ServicePeriodStart = new DateOnly(2026, 10, 1),
+        ServicePeriodEnd = new DateOnly(2026, 10, 31),
+    };
 }
