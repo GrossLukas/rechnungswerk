@@ -1195,9 +1195,9 @@ input[type="radio"] {
     white-space: nowrap;
 }
 
-/* Schmales Blatt: Positionsnummer und Steuersatz ausblenden – die Sätze stehen darunter in der Steuertabelle –,
-   damit der Zeilenbetrag ohne Seitwärtsrollen sichtbar bleibt. */
-@container (max-width: 480px) {
+/* Blatt in Telefonbreite: Positionsnummer und Steuersatz ausblenden – die Sätze stehen darunter in der Steuertabelle –,
+   damit der Zeilenbetrag ohne Seitwärtsrollen sichtbar bleibt. Ab Tablet-Breite passen alle Spalten. */
+@container (max-width: 420px) {
     .table-lines th:nth-child(1),
     .table-lines td:nth-child(1),
     .table-lines th:nth-child(5),
