@@ -19,7 +19,8 @@ else
 {
     <PageHeader Title="Einrichten" />
 
-    <EditForm Model="form" OnValidSubmit="CompleteAsync" novalidate class="form">
+    @* Meldungen aus dem Dienst gelten nur für den Versuch, der sie ausgelöst hat. *@
+    <EditForm Model="form" OnValidSubmit="CompleteAsync" OnInvalidSubmit="() => result = null" novalidate class="form">
         <ModelValidator Include="[form.Company]" />
 
         <fieldset class="section">
