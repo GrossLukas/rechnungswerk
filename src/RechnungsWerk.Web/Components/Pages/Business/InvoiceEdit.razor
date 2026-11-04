@@ -120,15 +120,21 @@
             <button type="button" class="button button-plain" @onclick="AddLine">+ Position</button>
             @if (articles.Count > 0)
             {
-                <select @bind="articlePick" @bind:after="AddArticle" aria-label="Artikel übernehmen">
-                    <option value="">+ Artikel</option>
-                    @foreach (var article in articles)
-                    {
-                        <option value="@article.Id">@article.Name</option>
-                    }
-                </select>
+                <button type="button" class="button button-plain article-toggle" aria-expanded="@(articleMenuOpen ? "true" : "false")"
+                        aria-controls="article-menu" @onclick="ToggleArticleMenu">+ Artikel</button>
             }
         </div>
+        @if (articleMenuOpen)
+        {
+            @* Übernommen wird erst per Klick oder Enter – eine Auswahlliste übernähme unter Windows schon beim Blättern mit
+               den Pfeiltasten. *@
+            <ul id="article-menu" class="article-menu" aria-label="Artikel" @onkeydown="CloseArticleMenuOnEscape">
+                @foreach (var article in articles)
+                {
+                    <li><button type="button" @onclick="() => AddArticle(article)">@article.Name</button></li>
+                }
+            </ul>
+        }
         <FormErrors Messages="@(Error(nameof(InvoiceForm.Lines)) is { } linesError ? [linesError] : null)" />
 
         <dl class="totals-list editor-totals">
@@ -185,7 +191,7 @@
     private ServiceResult? result;
     private (string Text, string ActionText, string ActionHref)? blocker;
     private string? number;
-    private string articlePick = "";
+    private bool articleMenuOpen;
     private bool smallBusiness;
     private bool loading = true;
     private bool saving;
@@ -290,26 +296,42 @@
         }
     }
 
-    private void AddArticle()
+    private void ToggleArticleMenu()
     {
-        if (int.TryParse(articlePick, out var articleId) && articles.FirstOrDefault(a => a.Id == articleId) is { } article)
+        articleMenuOpen = !articleMenuOpen;
+        if (articleMenuOpen)
         {
-            var line = InvoiceLineForm.FromArticle(article);
-            if (smallBusiness)
-            {
-                line.VatRate = 0;
-            }
+            FocusAfterRender(".article-menu button");
+        }
+    }
 
-            // Eine leere Startposition ersetzen statt eine zweite anzuhängen.
-            if (form.Lines is [{ Name: "" or null, UnitPrice: 0 }])
-            {
-                form.Lines.Clear();
-            }
+    private void CloseArticleMenuOnEscape(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            articleMenuOpen = false;
+            FocusAfterRender(".article-toggle");
+        }
+    }
 
-            form.Lines.Add(line);
+    private void AddArticle(Article article)
+    {
+        var line = InvoiceLineForm.FromArticle(article);
+        if (smallBusiness)
+        {
+            line.VatRate = 0;
         }
 
-        articlePick = "";
+        // Eine leere Startposition ersetzen statt eine zweite anzuhängen.
+        if (form.Lines is [{ Name: "" or null, UnitPrice: 0 }])
+        {
+            form.Lines.Clear();
+        }
+
+        form.Lines.Add(line);
+        articleMenuOpen = false;
+        // Zurück an den Knopf – so lassen sich mehrere Artikel nacheinander übernehmen.
+        FocusAfterRender(".article-toggle");
     }
 
     private async Task SaveAsync(EditContext context)
