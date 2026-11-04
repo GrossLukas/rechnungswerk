@@ -4,6 +4,11 @@ Freie Web-App für deutsche E-Rechnungen – gemacht für Kleinbetriebe, Vereine
 RechnungsWerk läuft auf deinem eigenen Server: E-Rechnungen ansehen und drucken, mit dem offiziellen
 KoSIT-Validator prüfen, eigene Rechnungen als XRechnung oder ZUGFeRD erstellen und per E-Mail verschicken.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/rechnungen-dark.png">
+  <img src="docs/screenshots/rechnungen-light.png" alt="Rechnungsliste von RechnungsWerk mit Seitenleiste: Rechnungen mit Nummer, Kunde, Datum, Betrag und Status – Entwurf, Versendet oder Versand fehlgeschlagen">
+</picture>
+
 *English summary below.*
 
 ## Was RechnungsWerk kann
@@ -26,6 +31,37 @@ KoSIT-Validator prüfen, eigene Rechnungen als XRechnung oder ZUGFeRD erstellen 
   Versendete Rechnungen sind festgeschrieben und lassen sich nicht mehr ändern.
 
 Die erzeugten Dateien werden in den automatischen Tests mit dem KoSIT-Validator geprüft (siehe [Entwicklung](#entwicklung)).
+
+<table>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/anzeigen-dark.png">
+        <img src="docs/screenshots/anzeigen-light.png" alt="Anzeigen: hochgeladene XRechnung als lesbare Rechnung mit Rechnungssteller, Rechnungsempfänger, Käuferreferenz und Positionen">
+      </picture>
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/pruefen-dark.png">
+        <img src="docs/screenshots/pruefen-light.png" alt="Prüfen: Prüfbericht des KoSIT-Validators für eine fehlerhafte Rechnung – nicht gültig, jeder Fund mit Regel-ID wie BR-DE-15, deutscher Erklärung und Fundstelle">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/bearbeiten-dark.png">
+        <img src="docs/screenshots/bearbeiten-light.png" alt="Rechnung bearbeiten: Kunde, Rechnungsdatum, Leistungszeitraum, Fälligkeit und Positionen mit Menge, Einheit, Preis und Umsatzsteuersatz">
+      </picture>
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/rechnung-dark.png">
+        <img src="docs/screenshots/rechnung-light.png" alt="Versendete Rechnung an eine Behörde mit Leitweg-ID: Download als XRechnung UBL, XRechnung CII oder ZUGFeRD-PDF, alle drei Formate laut KoSIT-Validator gültig">
+      </picture>
+    </td>
+  </tr>
+</table>
 
 ## Schnellstart mit Docker Compose
 
