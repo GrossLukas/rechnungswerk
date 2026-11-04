@@ -885,6 +885,7 @@ input[type="radio"] {
 
 /* Rechnungsansicht (auch Druck) */
 .invoice-sheet {
+    container-type: inline-size;
     max-width: var(--document-width);
 }
 
@@ -936,6 +937,12 @@ input[type="radio"] {
     margin: 0;
     text-align: right;
     overflow-wrap: anywhere;
+}
+
+/* Beträge nie mitten in der Zahl umbrechen – „673,9“ in der einen und „0 €“ in der nächsten Zeile läse sich falsch. */
+.totals-list dd {
+    overflow-wrap: normal;
+    white-space: nowrap;
 }
 
 .detail-list {
@@ -1014,6 +1021,15 @@ input[type="radio"] {
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     gap: var(--space-6);
     align-items: start;
+}
+
+/* Schmales Blatt: Steuertabelle und Summen untereinander, damit die Summen die volle Breite haben. Das A4-Blatt im Druck
+   ist breiter und behält beide nebeneinander. */
+@container (max-width: 660px) {
+    .invoice-summary {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+    }
 }
 
 .total-due {
@@ -1257,8 +1273,7 @@ input[type="radio"] {
     }
 
     .field-row,
-    .parties,
-    .invoice-summary {
+    .parties {
         grid-template-columns: minmax(0, 1fr);
         gap: 0;
     }
