@@ -234,7 +234,7 @@ else if (renderError is not null)
 
     private async Task SendAsync()
     {
-        // „disabled“ erreicht den Browser erst nach dem Rundlauf – ein Doppelklick schickte sonst zwei Mails.
+        // Der Knopf sperrt nur per aria-disabled, damit er den Fokus behält – ein Doppelklick schickte sonst zwei Mails.
         if (sending)
         {
             return;

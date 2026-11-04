@@ -1,20 +1,21 @@
 @typeparam TValue
 @using System.Linq.Expressions
 
-@* Kurzes Label über dem Eingabefeld; Fehler stehen direkt darunter und nur, wenn es wirklich einen gibt. *@
-<div class="field">
+@* Kurzes Label über dem Eingabefeld; Fehler stehen direkt darunter und nur, wenn es wirklich einen gibt. Sie stehen
+   im Label: So gehören sie zum Feld, und Screenreader lesen sie mit dem Feldnamen vor, sobald das Feld den Fokus hat. *@
+<div class="field @(string.IsNullOrEmpty(Error) ? null : "has-error")">
     <label>
         <span class="field-label">@Label</span>
         @ChildContent
+        @if (For is not null)
+        {
+            <ValidationMessage For="For" />
+        }
+        @if (!string.IsNullOrEmpty(Error))
+        {
+            <span class="field-error">@Error</span>
+        }
     </label>
-    @if (For is not null)
-    {
-        <ValidationMessage For="For" />
-    }
-    @if (!string.IsNullOrEmpty(Error))
-    {
-        <p class="field-error" role="alert">@Error</p>
-    }
 </div>
 
 @code {

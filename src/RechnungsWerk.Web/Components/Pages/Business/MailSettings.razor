@@ -126,7 +126,7 @@
 
     private async Task SendTestAsync()
     {
-        // „disabled“ erreicht den Browser erst nach dem Rundlauf – ein Doppelklick schickte sonst zwei Testmails.
+        // Der Knopf sperrt nur per aria-disabled, damit er den Fokus behält – ein Doppelklick schickte sonst zwei Testmails.
         if (busy)
         {
             return;

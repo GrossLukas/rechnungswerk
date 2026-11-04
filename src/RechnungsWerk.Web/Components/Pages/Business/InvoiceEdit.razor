@@ -312,7 +312,7 @@
 
     private async Task SaveAsync()
     {
-        // „disabled“ erreicht den Browser erst nach dem Rundlauf – ein Doppelklick käme sonst zweimal an.
+        // Der Knopf sperrt nur per aria-disabled, damit er den Fokus behält – ein Doppelklick käme sonst zweimal an.
         if (saving)
         {
             return;
