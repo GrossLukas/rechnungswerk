@@ -53,6 +53,22 @@ public sealed class EInvoiceReaderSecurityTests
     }
 
     [Fact]
+    public void Deeply_nested_invoice_is_rejected_instead_of_overflowing_the_stack()
+    {
+        var error = Assert.Throws<EInvoiceReadException>(() => reader.Read(DeeplyNestedInvoice()));
+
+        Assert.Contains("zu tief verschachtelt", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Deeply_nested_invoice_is_not_passed_on_to_the_validator()
+    {
+        var error = Assert.Throws<EInvoiceReadException>(() => reader.ExtractXml(DeeplyNestedInvoice()));
+
+        Assert.Contains("zu tief verschachtelt", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Doctype_in_utf16_file_is_detected()
     {
         var xml = "<?xml version=\"1.0\" encoding=\"UTF-16\"?><!DOCTYPE x [<!ENTITY a \"b\">]><x>&a;</x>";
@@ -99,5 +115,15 @@ public sealed class EInvoiceReaderSecurityTests
         var error = Assert.Throws<EInvoiceReadException>(() => reader.Read(Encoding.ASCII.GetBytes("%PDF-1.7\nkaputt")));
 
         Assert.Contains("PDF konnte nicht geöffnet werden", error.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>Gültige XRechnung, deren Hinweis 50.000 ineinander geschachtelte Elemente enthält.</summary>
+    private static byte[] DeeplyNestedInvoice()
+    {
+        const int depth = 50_000;
+        var xml = Encoding.UTF8.GetString(new EInvoiceWriter().Write(TestInvoices.Sample(), EInvoiceFormat.XRechnungUbl));
+        var note = xml.IndexOf("<cbc:Note>", StringComparison.Ordinal) + "<cbc:Note>".Length;
+        var nested = string.Concat(Enumerable.Repeat("<x>", depth)) + string.Concat(Enumerable.Repeat("</x>", depth));
+        return Encoding.UTF8.GetBytes(xml.Insert(note, nested));
     }
 }

@@ -11,6 +11,12 @@ public static class SecureXml
 {
     public const int MaxCharacters = 30_000_000;
 
+    /// <summary>
+    /// Echte E-Rechnungen kommen mit gut zehn Ebenen aus. Tiefer verschachtelte Dateien würden die ZUGFeRD-Bibliothek,
+    /// die Texte rekursiv liest, in einen Stapelüberlauf treiben – und der beendet den ganzen Prozess.
+    /// </summary>
+    public const int MaxDepth = 64;
+
     public static XmlReaderSettings ReaderSettings() => new()
     {
         DtdProcessing = DtdProcessing.Prohibit,
@@ -21,7 +27,7 @@ public static class SecureXml
         CloseInput = true,
     };
 
-    /// <exception cref="EInvoiceReadException">bei DTD, kaputtem XML oder zu großen Dokumenten.</exception>
+    /// <exception cref="EInvoiceReadException">bei DTD, kaputtem XML, zu großen oder zu tief verschachtelten Dokumenten.</exception>
     public static XDocument Load(byte[] xml)
     {
         if (ContainsDoctype(xml))
@@ -33,6 +39,7 @@ public static class SecureXml
 
         try
         {
+            EnsureDepth(xml);
             using var reader = XmlReader.Create(new MemoryStream(xml, writable: false), ReaderSettings());
             return XDocument.Load(reader, LoadOptions.None);
         }
@@ -44,6 +51,20 @@ public static class SecureXml
         {
             throw new EInvoiceReadException(
                 $"Die Datei ist kein gültiges XML (Zeile {ex.LineNumber}, Spalte {ex.LinePosition}). Ist es vielleicht eine andere Dateiart?", ex);
+        }
+    }
+
+    // Ein eigener Durchgang mit dem XmlReader liest Knoten für Knoten, ohne Rekursion und ohne Baum im Speicher.
+    private static void EnsureDepth(byte[] xml)
+    {
+        using var reader = XmlReader.Create(new MemoryStream(xml, writable: false), ReaderSettings());
+        while (reader.Read())
+        {
+            if (reader.Depth > MaxDepth)
+            {
+                throw new EInvoiceReadException(
+                    $"Die Datei ist zu tief verschachtelt (mehr als {MaxDepth} Ebenen) und wird nicht verarbeitet.");
+            }
         }
     }
 
