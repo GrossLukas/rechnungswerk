@@ -44,7 +44,7 @@
     }
     @if (Validator.IsConfigured && renderError is null)
     {
-        <button type="button" class="button button-plain" @onclick="ValidateAllAsync" disabled="@checking">Prüfen</button>
+        <button type="button" class="button button-plain" @onclick="ValidateAllAsync" aria-disabled="@(checking ? "true" : null)">Prüfen</button>
     }
     <button type="button" class="button button-plain" data-print>Drucken</button>
     @if (!invoice.IsLocked)
@@ -53,12 +53,12 @@
         {
             <span class="confirm">
                 <button type="button" class="button button-danger" @onclick="DeleteAsync">Wirklich löschen</button>
-                <button type="button" class="button button-plain" @onclick="() => confirmDelete = false">Abbrechen</button>
+                <button type="button" class="button button-plain" @onclick="CancelDelete">Abbrechen</button>
             </span>
         }
         else
         {
-            <button type="button" class="button button-plain button-danger-text" @onclick="() => confirmDelete = true">Löschen</button>
+            <button type="button" class="button button-plain button-danger-text" @onclick="AskDelete">Löschen</button>
         }
     }
 </div>
@@ -96,8 +96,8 @@
         </div>
         <FormErrors Messages="sendResult?.GeneralErrors" />
         <div class="form-actions">
-            <button type="button" class="button button-plain" @onclick="() => sendOpen = false">Abbrechen</button>
-            <button type="button" class="button button-primary" @onclick="SendAsync" disabled="@sending">@(sending ? "Wird gesendet …" : "Senden")</button>
+            <button type="button" class="button button-plain" @onclick="CloseSend">Abbrechen</button>
+            <button type="button" class="button button-primary" @onclick="SendAsync" aria-disabled="@(sending ? "true" : null)">@(sending ? "Wird gesendet …" : "Senden")</button>
         </div>
     </section>
 }
@@ -207,6 +207,25 @@ else if (renderError is not null)
         sendFormat = invoice?.SentFormat ?? invoice?.PreferredFormat ?? EInvoiceFormat.XRechnungUbl;
         sendResult = null;
         sendOpen = true;
+        FocusAfterRender(".panel input[type=email]");
+    }
+
+    private void CloseSend()
+    {
+        sendOpen = false;
+        FocusAfterRender(".page-action .button-primary");
+    }
+
+    private void AskDelete()
+    {
+        confirmDelete = true;
+        FocusAfterRender(".toolbar .confirm .button-plain");
+    }
+
+    private void CancelDelete()
+    {
+        confirmDelete = false;
+        FocusAfterRender(".toolbar .button-danger-text");
     }
 
     private async Task SendAsync()
@@ -223,6 +242,11 @@ else if (renderError is not null)
             sendResult = await Mail.SendInvoiceAsync(Id, sendFormat, recipient);
             await LoadAsync();
             sendOpen = !sendResult.Succeeded;
+            if (sendResult.Succeeded)
+            {
+                // Der Versandbereich ist zu – weiter geht es am Knopf „Erneut senden“.
+                FocusAfterRender(".page-action .button-primary");
+            }
         }
         finally
         {
@@ -273,7 +297,7 @@ else if (renderError is not null)
             return;
         }
 
-        confirmDelete = false;
+        CancelDelete();
         checkError = string.Join(" ", result.Errors);
         deleting = false;
     }

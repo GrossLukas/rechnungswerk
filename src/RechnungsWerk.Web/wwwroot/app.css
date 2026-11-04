@@ -300,7 +300,9 @@ h1:focus,
     transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.button:disabled {
+/* aria-disabled sperrt, solange eine Aktion läuft, ohne den Fokus vom Knopf zu nehmen (das tut disabled). */
+.button:disabled,
+.button[aria-disabled="true"] {
     opacity: 0.5;
     cursor: default;
 }
@@ -310,7 +312,7 @@ h1:focus,
     color: var(--color-on-accent);
 }
 
-.button-primary:hover:not(:disabled) {
+.button-primary:hover:not(:disabled, [aria-disabled="true"]) {
     background: var(--color-accent-fill-hover);
 }
 
@@ -319,9 +321,9 @@ h1:focus,
     color: var(--color-text);
 }
 
-.button-secondary:hover:not(:disabled),
-.button-plain:hover:not(:disabled),
-.button-icon:hover:not(:disabled) {
+.button-secondary:hover:not(:disabled, [aria-disabled="true"]),
+.button-plain:hover:not(:disabled, [aria-disabled="true"]),
+.button-icon:hover:not(:disabled, [aria-disabled="true"]) {
     background: var(--color-hover);
 }
 

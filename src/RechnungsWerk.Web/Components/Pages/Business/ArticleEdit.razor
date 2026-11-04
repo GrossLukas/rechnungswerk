@@ -50,15 +50,15 @@
             {
                 <span class="confirm">
                     <button type="button" class="button button-danger" @onclick="DeleteAsync">Wirklich löschen</button>
-                    <button type="button" class="button button-plain" @onclick="() => confirmDelete = false">Abbrechen</button>
+                    <button type="button" class="button button-plain" @onclick="CancelDelete">Abbrechen</button>
                 </span>
             }
             else
             {
-                <button type="button" class="button button-plain button-danger-text" @onclick="() => confirmDelete = true">Löschen</button>
+                <button type="button" class="button button-plain button-danger-text" @onclick="AskDelete">Löschen</button>
             }
         }
-        <button type="submit" class="button button-primary" disabled="@saving">Speichern</button>
+        <button type="submit" class="button button-primary" aria-disabled="@(saving ? "true" : null)">Speichern</button>
     </div>
 </EditForm>
 
@@ -109,6 +109,18 @@
 
         errors = result.Errors;
         saving = false;
+    }
+
+    private void AskDelete()
+    {
+        confirmDelete = true;
+        FocusAfterRender(".form-actions .confirm .button-plain");
+    }
+
+    private void CancelDelete()
+    {
+        confirmDelete = false;
+        FocusAfterRender(".form-actions .button-danger-text");
     }
 
     private async Task DeleteAsync()

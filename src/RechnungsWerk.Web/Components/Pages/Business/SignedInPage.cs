@@ -8,7 +8,7 @@ namespace RechnungsWerk.Web.Components.Pages.Business;
 /// nicht mehr hängt. Endet die Anmeldung (Abmelden, Passwortwechsel), lädt die Seite deshalb neu: Mit gültigem Cookie geht
 /// es dort weiter, sonst leitet der Server zur Anmeldung – speichern oder senden lässt sich im alten Tab nichts mehr.
 /// </summary>
-public abstract class SignedInPage : ComponentBase, IDisposable
+public abstract class SignedInPage : PageBase, IDisposable
 {
     private bool subscribed;
 

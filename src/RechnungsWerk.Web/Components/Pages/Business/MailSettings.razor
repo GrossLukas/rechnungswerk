@@ -57,7 +57,7 @@
             {
                 <span class="saved" role="status">Gespeichert</span>
             }
-            <button type="submit" class="button button-primary" disabled="@busy">Speichern</button>
+            <button type="submit" class="button button-primary" aria-disabled="@(busy ? "true" : null)">Speichern</button>
         </div>
     </EditForm>
 
@@ -73,7 +73,7 @@
                     <p class="field-error" role="alert">@recipientError</p>
                 }
             </div>
-            <button type="button" class="button button-secondary" @onclick="SendTestAsync" disabled="@busy">@(busy ? "Wird gesendet …" : "Testmail senden")</button>
+            <button type="button" class="button button-secondary" @onclick="SendTestAsync" aria-disabled="@(busy ? "true" : null)">@(busy ? "Wird gesendet …" : "Testmail senden")</button>
         </div>
         @if (testResult is { Succeeded: true })
         {

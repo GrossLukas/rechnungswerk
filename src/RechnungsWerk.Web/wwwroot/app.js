@@ -49,4 +49,8 @@ window.rechnungsWerk = {
     setTitle: (title) => {
         document.title = title;
     },
+    // Fokus auf ein Element, das erst mit dem letzten Zeichnen erschienen ist.
+    focus: (selector) => {
+        document.querySelector(selector)?.focus();
+    },
 };

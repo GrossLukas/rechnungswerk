@@ -17,7 +17,7 @@
             {
                 <span class="saved" role="status">Gespeichert</span>
             }
-            <button type="submit" class="button button-primary" disabled="@saving">Speichern</button>
+            <button type="submit" class="button button-primary" aria-disabled="@(saving ? "true" : null)">Speichern</button>
         </div>
     </EditForm>
 }

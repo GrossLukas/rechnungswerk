@@ -1,5 +1,6 @@
 @page "/pruefen"
 @rendermode InteractiveServer
+@inherits PageBase
 @inject EInvoiceReader Reader
 @inject KositValidatorClient Validator
 @inject ILogger<ValidateInvoice> Logger
@@ -42,6 +43,8 @@ else
         try
         {
             report = await BrowserFiles.ProcessAsync(e.File, content => Validator.ValidateAsync(Reader.ExtractXml(content)));
+            // Die Ablage ist weg – der Fokus geht an den Anfang des Ergebnisses.
+            FocusAfterRender("main h1");
         }
         catch (EInvoiceReadException ex)
         {
@@ -60,6 +63,11 @@ else
         finally
         {
             busy = false;
+            if (report is null)
+            {
+                // Fehler: weiter an der Ablage, die wieder bedienbar ist.
+                FocusAfterRender(".dropzone input");
+            }
         }
     }
 
@@ -67,5 +75,6 @@ else
     {
         report = null;
         error = null;
+        FocusAfterRender(".dropzone input");
     }
 }

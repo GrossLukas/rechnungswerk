@@ -166,7 +166,7 @@
 
     <FormErrors Messages="result?.GeneralErrors" />
     <div class="form-actions">
-        <button type="submit" class="button button-primary" disabled="@saving">Speichern</button>
+        <button type="submit" class="button button-primary" aria-disabled="@(saving ? "true" : null)">Speichern</button>
     </div>
 </EditForm>
 
@@ -269,7 +269,11 @@
         }
     }
 
-    private void AddLine() => form.Lines.Add(new InvoiceLineForm { VatRate = smallBusiness ? 0 : 19 });
+    private void AddLine()
+    {
+        form.Lines.Add(new InvoiceLineForm { VatRate = smallBusiness ? 0 : 19 });
+        FocusAfterRender(".lines-list > li:last-child input");
+    }
 
     private void RemoveLine(int index)
     {
@@ -277,6 +281,10 @@
         {
             form.Lines.RemoveAt(index);
             result = null;
+            // Weiter an der Nachbarzeile; bleibt nur eine (ohne Entfernen), an „+ Position“.
+            FocusAfterRender(form.Lines.Count > 1
+                ? $".lines-list > li:nth-child({Math.Min(index, form.Lines.Count - 1) + 1}) .button-icon"
+                : ".lines-actions .button-plain");
         }
     }
 

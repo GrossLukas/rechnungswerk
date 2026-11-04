@@ -1,5 +1,6 @@
 @page "/anzeigen"
 @rendermode InteractiveServer
+@inherits PageBase
 @inject EInvoiceReader Reader
 @inject ILogger<ViewInvoice> Logger
 
@@ -38,6 +39,8 @@ else
         {
             // Nur im Arbeitsspeicher: die Datei wird nirgends abgelegt.
             view = await BrowserFiles.ProcessAsync(e.File, content => Task.FromResult(Reader.Read(content).View));
+            // Die Ablage ist weg – der Fokus geht an den Anfang des Ergebnisses.
+            FocusAfterRender("main h1");
         }
         catch (EInvoiceReadException ex)
         {
@@ -52,6 +55,11 @@ else
         finally
         {
             busy = false;
+            if (view is null)
+            {
+                // Fehler: weiter an der Ablage, die wieder bedienbar ist.
+                FocusAfterRender(".dropzone input");
+            }
         }
     }
 
@@ -59,5 +67,6 @@ else
     {
         view = null;
         error = null;
+        FocusAfterRender(".dropzone input");
     }
 }
