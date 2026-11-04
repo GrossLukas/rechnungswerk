@@ -65,10 +65,12 @@ Die erzeugten Dateien werden in den automatischen Tests mit dem KoSIT-Validator 
 
 ## Schnellstart mit Docker Compose
 
+Ausführliche Anleitung für Windows, macOS und Linux: [docs/installation.md](docs/installation.md)
+
 Voraussetzung: Docker mit Compose-Plugin.
 
 ```bash
-git clone <Adresse dieses Repositorys> rechnungswerk
+git clone https://github.com/GrossLukas/rechnungswerk.git
 cd rechnungswerk
 docker compose up -d --build
 ```
@@ -124,7 +126,7 @@ Hinweise.
 
 ### Datensicherung
 
-Alles Wichtige liegt im Datenordner (`/data`, in Compose das Volume `rechnungswerk-data`):
+Alles Wichtige liegt im Datenordner (`/data`, in Compose das Volume `rechnungswerk_rechnungswerk-data`):
 
 - `rechnungswerk.db` (mit `-wal`/`-shm`) – Firmenprofil, Kunden, Artikel, Rechnungen, Konten
 - `keys/` – DataProtection-Schlüssel; ohne sie lässt sich das gespeicherte SMTP-Passwort nicht mehr entschlüsseln
@@ -134,13 +136,12 @@ Sichere den Ordner vollständig und am besten bei gestoppter Web-App, z. B.:
 
 ```bash
 docker compose stop web
-docker run --rm -v <projekt>_rechnungswerk-data:/data -v "$PWD":/backup busybox \
+docker run --rm -v rechnungswerk_rechnungswerk-data:/data -v "$PWD":/backup busybox \
   tar czf /backup/rechnungswerk-daten.tgz -C /data .
 docker compose start web
 ```
 
-Den genauen Volume-Namen zeigt `docker volume ls`. Die Schlüssel liegen unverschlüsselt im Datenordner – schütze die
-Sicherung entsprechend.
+Die Schlüssel liegen unverschlüsselt im Datenordner – schütze die Sicherung entsprechend.
 
 ## Datenschutz
 
@@ -226,5 +227,6 @@ ZUGFeRD EN 16931 PDF/A-3, and send them through your own SMTP server with a per-
 
 Quick start: `docker compose up -d --build`, open <http://localhost:8080>, read the one-time setup code with
 `docker compose exec web cat /data/setup-code.txt` and create the first account at `/einrichtung`.
+A step-by-step installation guide for Windows, macOS and Linux (in German) is in [docs/installation.md](docs/installation.md).
 All data stays on your server. The user interface is German only. RechnungsWerk is not tax or legal advice.
 License: AGPL-3.0; the KoSIT validator and its XRechnung configuration are Apache-2.0.

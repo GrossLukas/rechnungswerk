@@ -1,4 +1,9 @@
 # RechnungsWerk: Web-App und KoSIT-Validator. Start: docker compose up -d --build
+# Fester Projektname: Container, Netze und das Daten-Volume (rechnungswerk_rechnungswerk-data) heißen in jedem Ordner
+# gleich, damit eine neu entpackte Version die bisherigen Daten findet. Eine zweite, getrennte Instanz braucht deshalb
+# "docker compose -p <name> ..." und einen anderen Port.
+name: rechnungswerk
+
 services:
   web:
     build: .
