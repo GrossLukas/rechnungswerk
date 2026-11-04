@@ -93,26 +93,33 @@
 
     private async Task SaveAsync()
     {
-        saving = true;
-        try
+        // „disabled“ erreicht den Browser erst nach dem Rundlauf – ein Doppelklick käme sonst zweimal an.
+        if (saving)
         {
-            var result = await Customers.SaveAsync(Id, form);
-            if (result.Succeeded)
-            {
-                Navigation.NavigateTo("kunden");
-                return;
-            }
+            return;
+        }
 
-            errors = result.Errors;
-        }
-        finally
+        saving = true;
+        var result = await Customers.SaveAsync(Id, form);
+        if (result.Succeeded)
         {
-            saving = false;
+            // Gesperrt lassen, bis der Browser die Liste zeigt – auch ein später zweiter Klick legt nichts mehr an.
+            Navigation.NavigateTo("kunden");
+            return;
         }
+
+        errors = result.Errors;
+        saving = false;
     }
 
     private async Task DeleteAsync()
     {
+        if (saving)
+        {
+            return;
+        }
+
+        saving = true;
         if (Id is { } id)
         {
             await Customers.DeleteAsync(id);

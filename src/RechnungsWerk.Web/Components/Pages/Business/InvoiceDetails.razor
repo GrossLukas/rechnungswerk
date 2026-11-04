@@ -156,6 +156,7 @@ else if (renderError is not null)
     private bool sendOpen;
     private bool sending;
     private bool checking;
+    private bool deleting;
     private bool confirmDelete;
 
     protected override async Task OnParametersSetAsync()
@@ -210,6 +211,12 @@ else if (renderError is not null)
 
     private async Task SendAsync()
     {
+        // „disabled“ erreicht den Browser erst nach dem Rundlauf – ein Doppelklick schickte sonst zwei Mails.
+        if (sending)
+        {
+            return;
+        }
+
         sending = true;
         try
         {
@@ -225,7 +232,7 @@ else if (renderError is not null)
 
     private async Task ValidateAllAsync()
     {
-        if (invoice is null)
+        if (invoice is null || checking)
         {
             return;
         }
@@ -253,6 +260,12 @@ else if (renderError is not null)
 
     private async Task DeleteAsync()
     {
+        if (deleting)
+        {
+            return;
+        }
+
+        deleting = true;
         var result = await Invoices.DeleteAsync(Id);
         if (result.Succeeded)
         {
@@ -262,5 +275,6 @@ else if (renderError is not null)
 
         confirmDelete = false;
         checkError = string.Join(" ", result.Errors);
+        deleting = false;
     }
 }

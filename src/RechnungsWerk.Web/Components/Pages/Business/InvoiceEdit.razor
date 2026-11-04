@@ -301,21 +301,22 @@
 
     private async Task SaveAsync()
     {
-        saving = true;
-        try
+        // „disabled“ erreicht den Browser erst nach dem Rundlauf – ein Doppelklick käme sonst zweimal an.
+        if (saving)
         {
-            result = await Invoices.SaveAsync(form);
-            if (result.Succeeded)
-            {
-                Navigation.NavigateTo($"rechnungen/{result.Id}");
-                return;
-            }
+            return;
+        }
 
-            moreOpen = MoreFields.Any(field => result.ErrorFor(field) is not null);
-        }
-        finally
+        saving = true;
+        result = await Invoices.SaveAsync(form);
+        if (result.Succeeded)
         {
-            saving = false;
+            // Gesperrt lassen, bis der Browser die Rechnung zeigt – sonst vergäbe ein später zweiter Klick eine zweite Nummer.
+            Navigation.NavigateTo($"rechnungen/{result.Id}");
+            return;
         }
+
+        moreOpen = MoreFields.Any(field => result.ErrorFor(field) is not null);
+        saving = false;
     }
 }

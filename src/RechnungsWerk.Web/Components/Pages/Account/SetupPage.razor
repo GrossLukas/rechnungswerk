@@ -68,19 +68,21 @@ else
 
     private async Task CompleteAsync()
     {
+        if (saving)
+        {
+            return;
+        }
+
         saving = true;
         result = null;
-        try
+        result = await Setup.CompleteAsync(form);
+        if (result.Succeeded)
         {
-            result = await Setup.CompleteAsync(form);
-            if (result.Succeeded)
-            {
-                Navigation.NavigateTo("anmelden", forceLoad: true);
-            }
+            // Gesperrt lassen, bis die Anmeldung geladen ist.
+            Navigation.NavigateTo("anmelden", forceLoad: true);
+            return;
         }
-        finally
-        {
-            saving = false;
-        }
+
+        saving = false;
     }
 }

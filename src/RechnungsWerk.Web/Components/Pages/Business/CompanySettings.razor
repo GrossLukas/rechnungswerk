@@ -35,6 +35,11 @@
 
     private async Task SaveAsync()
     {
+        if (saving)
+        {
+            return;
+        }
+
         saving = true;
         saved = false;
         try

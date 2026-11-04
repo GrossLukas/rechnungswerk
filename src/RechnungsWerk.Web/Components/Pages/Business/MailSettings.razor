@@ -110,6 +110,11 @@
 
     private async Task SaveAsync()
     {
+        if (busy)
+        {
+            return;
+        }
+
         busy = true;
         saved = false;
         try
@@ -127,6 +132,12 @@
 
     private async Task SendTestAsync()
     {
+        // „disabled“ erreicht den Browser erst nach dem Rundlauf – ein Doppelklick schickte sonst zwei Testmails.
+        if (busy)
+        {
+            return;
+        }
+
         busy = true;
         testResult = null;
         try
