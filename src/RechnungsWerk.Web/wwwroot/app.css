@@ -239,8 +239,10 @@ h1:focus {
 }
 
 /* ---------- Bausteine ---------- */
+/* Passen Titel und Aktion nicht nebeneinander, rutscht die Aktion in die nächste Zeile – statt den Titel zu zerreißen. */
 .page-header {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
@@ -249,11 +251,12 @@ h1:focus {
 }
 
 .page-header h1 {
+    min-width: 0;
     font-size: var(--text-title);
     font-weight: 700;
     line-height: 1.15;
     letter-spacing: -0.02em;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
 }
 
 .page-action {
@@ -373,6 +376,7 @@ h1:focus {
 }
 
 .list {
+    container-type: inline-size;
     margin: 0 0 var(--space-5);
     padding: 0;
     list-style: none;
@@ -420,21 +424,44 @@ h1:focus {
     color: var(--color-text-secondary);
 }
 
+/* Nebenangaben rechts weichen dem Titel: höchstens 40 % der Zeile, darin gekürzt. */
 .row-trailing {
     display: flex;
-    flex: none;
+    flex: 0 1 auto;
     align-items: center;
     gap: var(--space-4);
+    min-width: 0;
+    max-width: 40%;
+}
+
+.row-trailing > * {
+    max-width: 100%;
 }
 
 .row-trailing .amount {
     min-width: 96px;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 /* Breit genug für den längsten Status „Versand fehlgeschlagen“, damit die Beträge eine Spalte bilden. */
 .row-trailing .status {
     min-width: 12em;
+}
+
+/* Schmale Liste: Betrag über dem Status. Der Status bleibt sichtbar und darf umbrechen. */
+@container (max-width: 700px) {
+    .row-trailing {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0;
+    }
+
+    .row-trailing .status {
+        min-width: 0;
+        white-space: normal;
+        text-align: right;
+    }
 }
 
 .empty {
@@ -1285,10 +1312,6 @@ input[type="radio"] {
 
     .parties {
         gap: var(--space-4);
-    }
-
-    .row-trailing .status {
-        display: none;
     }
 
     .dropzone {

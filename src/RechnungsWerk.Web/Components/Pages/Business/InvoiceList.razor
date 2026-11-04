@@ -36,7 +36,7 @@ else
     <ul class="list" role="list">
         @foreach (var invoice in Filtered)
         {
-            <ListRow Href="@($"rechnungen/{invoice.Id}")" Title="@invoice.Number" Detail="@($"{invoice.CustomerName} · {GermanFormat.Date(invoice.IssueDate)}")">
+            <ListRow Href="@($"rechnungen/{invoice.Id}")" Title="@invoice.Number" Detail="@($"{GermanFormat.Date(invoice.IssueDate)} · {invoice.CustomerName}")">
                 <Trailing>
                     <span class="amount">@GermanFormat.Money(invoice.GrandTotal, invoice.Currency)</span>
                     <InvoiceStatus Invoice="invoice" />
