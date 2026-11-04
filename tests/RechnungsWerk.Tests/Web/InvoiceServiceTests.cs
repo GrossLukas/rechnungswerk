@@ -152,6 +152,29 @@ public sealed class InvoiceServiceTests
     }
 
     [Fact]
+    public async Task Stored_unknown_country_code_gives_a_readable_error_instead_of_a_crash()
+    {
+        using var database = new TestDatabase();
+        var customerId = await SeedAsync(database);
+        var service = Service(database);
+        var ct = TestContext.Current.CancellationToken;
+        var id = (await service.SaveAsync(Form(customerId), ct)).Id!.Value;
+        await using (var db = database.Create())
+        {
+            // Ältere Daten konnten Codes enthalten, die keine E-Rechnung kennt.
+            var stored = await db.Invoices.SingleAsync(i => i.Id == id, ct);
+            stored.Buyer = stored.Buyer with { CountryCode = "UK" };
+            await db.SaveChangesAsync(ct);
+        }
+
+        var invoice = await service.GetAsync(id, ct);
+
+        var error = Assert.Throws<EInvoiceWriteException>(() => service.Render(invoice!, EInvoiceFormat.XRechnungUbl));
+        Assert.Contains("„UK“", error.Message, StringComparison.Ordinal);
+        Assert.Contains("Rechnungsempfänger", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Number_prefix_replaces_the_year_placeholder()
     {
         Assert.Equal("RE-2026-0042", InvoiceService.FormatNumber("RE-{Jahr}-", 42, 2026));

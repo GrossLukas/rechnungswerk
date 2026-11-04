@@ -58,7 +58,7 @@ public sealed class EInvoiceWriter(InvoicePdfRenderer pdfRenderer)
         // BR-CO-26 verlangt Verkäuferkennung (BT-29), Registernummer (BT-30) oder USt-IdNr. (BT-31). Die Steuernummer (BT-32)
         // zählt dort nicht – ohne USt-IdNr. (typisch für Kleinunternehmer) dient sie deshalb zusätzlich als Verkäuferkennung.
         var sellerId = string.IsNullOrWhiteSpace(seller.VatId) && !string.IsNullOrWhiteSpace(seller.TaxNumber) ? seller.TaxNumber.Trim() : null;
-        descriptor.SetSeller(seller.Name, seller.PostalCode, seller.City, seller.Street, Country(seller.CountryCode), id: sellerId);
+        descriptor.SetSeller(seller.Name, seller.PostalCode, seller.City, seller.Street, Country(seller.CountryCode, "Rechnungsstellers"), id: sellerId);
         descriptor.SetSellerContact(name: seller.ContactName, emailAddress: seller.Email, phoneno: seller.Phone);
         descriptor.SetSellerElectronicAddress(seller.Email, ElectronicAddressSchemeIdentifiers.ElectronicMailSmtp);
         if (!string.IsNullOrWhiteSpace(seller.VatId))
@@ -72,7 +72,7 @@ public sealed class EInvoiceWriter(InvoicePdfRenderer pdfRenderer)
         }
 
         var buyer = doc.Buyer;
-        descriptor.SetBuyer(buyer.Name, buyer.PostalCode, buyer.City, buyer.Street, Country(buyer.CountryCode),
+        descriptor.SetBuyer(buyer.Name, buyer.PostalCode, buyer.City, buyer.Street, Country(buyer.CountryCode, "Rechnungsempfängers"),
             id: string.IsNullOrWhiteSpace(buyer.CustomerNumber) ? null : buyer.CustomerNumber);
         if (!string.IsNullOrWhiteSpace(buyer.ContactName))
         {
@@ -174,20 +174,32 @@ public sealed class EInvoiceWriter(InvoicePdfRenderer pdfRenderer)
 
     private static string Compact(string value) => value.Replace(" ", "", StringComparison.Ordinal).Trim().ToUpperInvariant();
 
-    private static CountryCodes Country(string? code) =>
-        Enum.TryParse<CountryCodes>(code?.Trim(), ignoreCase: true, out var country) && Enum.IsDefined(country)
+    /// <summary>Ob ein Ländercode in eine E-Rechnung geschrieben werden kann – dieselbe Liste, mit der geschrieben wird.</summary>
+    public static bool IsKnownCountry(string? code) => TryCountry(code, out _);
+
+    // Nur zwei Buchstaben: Enum.TryParse nähme sonst auch Zahlen („12“ wäre Australien).
+    private static bool TryCountry(string? code, out CountryCodes country)
+    {
+        country = default;
+        var trimmed = code?.Trim();
+        return trimmed is { Length: 2 } && trimmed.All(char.IsAsciiLetter)
+               && Enum.TryParse(trimmed, ignoreCase: true, out country) && Enum.IsDefined(country);
+    }
+
+    private static CountryCodes Country(string? code, string party) =>
+        TryCountry(code, out var country)
             ? country
-            : throw new ArgumentException($"Unbekannter Ländercode „{code}“.", nameof(code));
+            : throw new EInvoiceWriteException($"Der Ländercode „{code}“ des {party} ist unbekannt. Gültig sind zweistellige Codes wie DE, AT oder GB.");
 
     private static CurrencyCodes Currency(string? code) =>
         Enum.TryParse<CurrencyCodes>(code?.Trim(), ignoreCase: true, out var currency) && Enum.IsDefined(currency)
             ? currency
-            : throw new ArgumentException($"Unbekannte Währung „{code}“.", nameof(code));
+            : throw new EInvoiceWriteException($"Die Währung „{code}“ ist unbekannt.");
 
     private static QuantityCodes Unit(string? code) =>
         Enum.TryParse<QuantityCodes>(code?.Trim(), ignoreCase: true, out var unit) && Enum.IsDefined(unit)
             ? unit
-            : throw new ArgumentException($"Unbekannte Einheit „{code}“.", nameof(code));
+            : throw new EInvoiceWriteException($"Die Einheit „{code}“ ist unbekannt.");
 
     private static TaxCategoryCodes Category(string code) => code switch
     {
@@ -196,3 +208,6 @@ public sealed class EInvoiceWriter(InvoicePdfRenderer pdfRenderer)
         _ => throw new ArgumentOutOfRangeException(nameof(code), code, "Unbekannte Steuerkategorie."),
     };
 }
+
+/// <summary>Die Rechnungsdaten lassen sich nicht als E-Rechnung schreiben; die deutsche Meldung darf direkt angezeigt werden.</summary>
+public sealed class EInvoiceWriteException(string message) : Exception(message);

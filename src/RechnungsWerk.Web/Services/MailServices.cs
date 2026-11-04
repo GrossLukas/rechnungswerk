@@ -177,7 +177,16 @@ public sealed class InvoiceMailService(
             GermanFormat.Money(invoice.GrandTotal, invoice.Currency),
             invoice.DueDate is { } due ? GermanFormat.Date(due) : "sofort",
             invoice.Seller.Name);
-        var file = invoices.Render(invoice, format);
+        GeneratedFile file;
+        try
+        {
+            file = invoices.Render(invoice, format);
+        }
+        catch (EInvoiceWriteException ex)
+        {
+            return ServiceResult.Fail(ex.Message);
+        }
+
         var mail = new OutgoingMail(
             to,
             invoice.Buyer.ContactName ?? invoice.CustomerName,

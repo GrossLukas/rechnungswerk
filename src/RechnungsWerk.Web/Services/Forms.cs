@@ -37,14 +37,12 @@ internal static partial class FormRules
     public const string Required = "Bitte fülle „{0}“ aus.";
     public const string TooLong = "„{0}“ darf höchstens {1} Zeichen lang sein.";
     public const string InvalidEmail = "Bitte gib eine gültige E-Mail-Adresse ein.";
+    public const string UnknownCountry = "Gib das Land als zweistelligen Ländercode an, z. B. DE, AT oder GB.";
 
     public static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     [GeneratedRegex(@"^[0-9]{2,12}(-[0-9A-Za-z]{1,30})?-[0-9]{2}$")]
     public static partial Regex LeitwegId();
-
-    [GeneratedRegex(@"^[A-Za-z]{2}$")]
-    public static partial Regex CountryCode();
 }
 
 public sealed class CompanyForm : IValidatableObject
@@ -113,9 +111,10 @@ public sealed class CompanyForm : IValidatableObject
             yield return new ValidationResult("Die IBAN ist ungültig. Bitte prüfe sie noch einmal.", [nameof(Iban)]);
         }
 
-        if (!FormRules.CountryCode().IsMatch(CountryCode ?? ""))
+        // Dieselbe Codeliste wie beim Schreiben der E-Rechnung – sonst ließe sich die Rechnung später nicht erzeugen.
+        if (!EInvoiceWriter.IsKnownCountry(CountryCode))
         {
-            yield return new ValidationResult("Gib das Land als zweistelligen Code an, z. B. DE.", [nameof(CountryCode)]);
+            yield return new ValidationResult(FormRules.UnknownCountry, [nameof(CountryCode)]);
         }
     }
 
@@ -212,9 +211,10 @@ public sealed class CustomerForm : IValidatableObject
             yield return new ValidationResult("Die Leitweg-ID hat nicht das übliche Format, z. B. 04011000-1234512345-06.", [nameof(LeitwegId)]);
         }
 
-        if (!FormRules.CountryCode().IsMatch(CountryCode ?? ""))
+        // Dieselbe Codeliste wie beim Schreiben der E-Rechnung – sonst ließe sich die Rechnung später nicht erzeugen.
+        if (!EInvoiceWriter.IsKnownCountry(CountryCode))
         {
-            yield return new ValidationResult("Gib das Land als zweistelligen Code an, z. B. DE.", [nameof(CountryCode)]);
+            yield return new ValidationResult(FormRules.UnknownCountry, [nameof(CountryCode)]);
         }
     }
 

@@ -35,11 +35,14 @@
     {
         <a class="button button-plain" href="@($"rechnungen/{invoice.Id}/bearbeiten")">Bearbeiten</a>
     }
-    @foreach (var format in Enum.GetValues<EInvoiceFormat>())
+    @if (renderError is null)
     {
-        <a class="button button-plain" href="@($"rechnungen/{invoice.Id}/datei/{format}")" download data-enhance-nav="false">@ShortLabel(format)</a>
+        @foreach (var format in Enum.GetValues<EInvoiceFormat>())
+        {
+            <a class="button button-plain" href="@($"rechnungen/{invoice.Id}/datei/{format}")" download data-enhance-nav="false">@ShortLabel(format)</a>
+        }
     }
-    @if (Validator.IsConfigured)
+    @if (Validator.IsConfigured && renderError is null)
     {
         <button type="button" class="button button-plain" @onclick="ValidateAllAsync" disabled="@checking">Prüfen</button>
     }
@@ -132,6 +135,10 @@ else if (invoice.LastMailError is not null && invoice.SentAt is null)
 {
     <InvoiceViewer View="preview" TitleOnlyInPrint="true" />
 }
+else if (renderError is not null)
+{
+    <p class="form-error" role="alert">@renderError</p>
+}
 
 @code {
     [Parameter]
@@ -142,6 +149,7 @@ else if (invoice.LastMailError is not null && invoice.SentAt is null)
     private readonly Dictionary<EInvoiceFormat, ValidationReport> reports = [];
     private ServiceResult? sendResult;
     private string? checkError;
+    private string? renderError;
     private string? recipient;
     private EInvoiceFormat sendFormat;
     private bool loading = true;
@@ -172,15 +180,23 @@ else if (invoice.LastMailError is not null && invoice.SentAt is null)
             return;
         }
 
+        renderError = null;
         try
         {
             // Vorschau aus der erzeugten XRechnung – so, wie sie beim Empfänger ankommt.
             preview = Reader.Read(Invoices.Render(invoice, EInvoiceFormat.XRechnungUbl).Content).View;
         }
+        catch (EInvoiceWriteException ex)
+        {
+            // Z. B. ein Ländercode aus älteren Daten, den keine E-Rechnung kennt.
+            preview = null;
+            renderError = ex.Message;
+        }
         catch (Exception ex) when (ex is EInvoiceReadException or InvalidOperationException or ArgumentException)
         {
             Logger.LogWarning(ex, "Vorschau für Rechnung {InvoiceId} konnte nicht erzeugt werden", Id);
             preview = null;
+            renderError = "Die Vorschau dieser Rechnung lässt sich nicht erzeugen.";
         }
     }
 
@@ -225,7 +241,7 @@ else if (invoice.LastMailError is not null && invoice.SentAt is null)
                 reports[format] = await Validator.ValidateAsync(Reader.ExtractXml(file.Content));
             }
         }
-        catch (ValidatorUnavailableException ex)
+        catch (Exception ex) when (ex is ValidatorUnavailableException or EInvoiceWriteException)
         {
             checkError = ex.Message;
         }

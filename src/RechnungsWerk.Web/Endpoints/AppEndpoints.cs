@@ -26,7 +26,16 @@ public static class AppEndpoints
                 return Results.NotFound();
             }
 
-            var file = await invoices.RenderAsync(id, parsed, cancellationToken);
+            GeneratedFile? file;
+            try
+            {
+                file = await invoices.RenderAsync(id, parsed, cancellationToken);
+            }
+            catch (EInvoiceWriteException ex)
+            {
+                return Results.Text(ex.Message, statusCode: StatusCodes.Status422UnprocessableEntity);
+            }
+
             if (file is null)
             {
                 return Results.NotFound();

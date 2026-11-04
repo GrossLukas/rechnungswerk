@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using RechnungsWerk.Core.EInvoice;
 using RechnungsWerk.Core.Mail;
@@ -56,6 +57,27 @@ public sealed class InvoiceMailServiceTests
         Assert.False(invoice.IsLocked);
         Assert.False(string.IsNullOrWhiteSpace(invoice.LastMailError));
         Assert.NotNull(invoice.LastMailAttemptAt);
+    }
+
+    [Fact]
+    public async Task Invoice_that_cannot_be_written_is_reported_and_not_sent()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var smtp = new FakeSmtpServer();
+        using var database = new TestDatabase();
+        var (service, invoiceId) = await ArrangeAsync(database, smtp.Port, ct);
+        await using (var db = database.Create())
+        {
+            var stored = await db.Invoices.SingleAsync(i => i.Id == invoiceId, ct);
+            stored.Buyer = stored.Buyer with { CountryCode = "UK" };
+            await db.SaveChangesAsync(ct);
+        }
+
+        var result = await service.SendInvoiceAsync(invoiceId, EInvoiceFormat.XRechnungUbl, "einkauf@musterhausen.example", ct);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("„UK“", Assert.Single(result.GeneralErrors), StringComparison.Ordinal);
+        Assert.Empty(smtp.Messages);
     }
 
     [Fact]
