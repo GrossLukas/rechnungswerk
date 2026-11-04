@@ -985,10 +985,11 @@ input[type="radio"] {
     outline-offset: -3px;
 }
 
-/* Doppelte Klasse: Die allgemeine Regel für Wertelisten (margin: 0) steht weiter unten und hob den Rand sonst auf. */
+/* Doppelte Klasse: Die allgemeine Regel für Wertelisten (margin: 0) steht weiter unten und hob den Rand sonst auf.
+   Rechts bleibt die Spalte der Entfernen-Knöpfe frei, damit die Summen unter den Beträgen enden. */
 .totals-list.editor-totals {
     width: min(100%, 320px);
-    margin: var(--space-4) 0 0 auto;
+    margin: var(--space-4) calc(36px + var(--space-2)) 0 auto;
 }
 
 /* Zu wenig Platz für eine Zeile: Felder untereinander, jedes mit eigener Beschriftung. */
@@ -1031,6 +1032,10 @@ input[type="radio"] {
         grid-column: 1;
         justify-self: start;
         align-self: end;
+    }
+
+    .totals-list.editor-totals {
+        margin-right: 0;
     }
 }
 
