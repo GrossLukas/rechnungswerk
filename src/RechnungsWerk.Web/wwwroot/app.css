@@ -113,8 +113,10 @@ a {
     opacity: 1;
 }
 
-/* Blazor setzt den Fokus nach dem Navigieren auf die Überschrift – für Screenreader, ohne sichtbaren Rahmen. */
-h1:focus {
+/* Überschrift und Inhalt bekommen den Fokus nur zur Orientierung (nach dem Navigieren, „Zum Inhalt springen“) –
+   für Screenreader und zum Rollen per Tastatur, ohne sichtbaren Rahmen. */
+h1:focus,
+.content:focus {
     outline: none;
 }
 

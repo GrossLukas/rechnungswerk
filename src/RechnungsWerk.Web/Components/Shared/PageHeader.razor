@@ -1,6 +1,6 @@
 @* Seitentitel mit höchstens einer Hauptaktion rechts. *@
 <header class="page-header">
-    <h1>@Title</h1>
+    <h1 tabindex="-1" @ref="heading">@Title</h1>
     @if (Action is not null)
     {
         <div class="page-action no-print">@Action</div>
@@ -8,9 +8,28 @@
 </header>
 
 @code {
+    private ElementReference heading;
+
     [Parameter, EditorRequired]
     public string Title { get; set; } = "";
 
     [Parameter]
     public RenderFragment? Action { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Live-Seiten zeichnen erst, wenn „FocusOnNavigate“ schon vergeblich nach der Überschrift gesucht hat. Der Fokus
+        // gehört trotzdem in den Inhalt: Screenreader sagen die Seite an, Bild ab und Leertaste rollen sie.
+        if (firstRender && RendererInfo.IsInteractive)
+        {
+            try
+            {
+                await heading.FocusAsync(preventScroll: true);
+            }
+            catch (JSDisconnectedException)
+            {
+                // Der Tab ist schon zu.
+            }
+        }
+    }
 }

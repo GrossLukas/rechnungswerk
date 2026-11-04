@@ -9,6 +9,16 @@ document.addEventListener('click', (event) => {
     }
 });
 
+// „Zum Inhalt springen“ setzt den Fokus in den Inhalt derselben Seite. Der Anker allein würde über <base href="/">
+// zur Startseite führen und Eingaben verwerfen.
+document.addEventListener('click', (event) => {
+    const skip = event.target instanceof Element ? event.target.closest('.skip-link') : null;
+    if (skip) {
+        event.preventDefault();
+        document.getElementById('main')?.focus();
+    }
+});
+
 // Strg/Cmd+Enter speichert das Formular, in dem der Fokus steht.
 document.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey) || !(event.target instanceof Element)) {
