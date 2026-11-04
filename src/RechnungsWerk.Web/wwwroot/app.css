@@ -511,10 +511,18 @@ h1:focus,
         gap: 0;
     }
 
+    /* Als Fließtext, damit der Punkt auch bei Umbruch direkt vor dem Wort steht. */
     .row-trailing .status {
+        display: block;
         min-width: 0;
         white-space: normal;
         text-align: right;
+    }
+
+    .row-trailing .status::before {
+        display: inline-block;
+        margin-right: 6px;
+        vertical-align: 1px;
     }
 }
 
