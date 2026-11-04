@@ -11,6 +11,7 @@ namespace RechnungsWerk.Web.Components;
 public abstract class PageBase : ComponentBase
 {
     private string? pendingFocus;
+    private bool pendingFirstError;
 
     [Inject]
     private IJSRuntime JS { get; set; } = default!;
@@ -18,17 +19,25 @@ public abstract class PageBase : ComponentBase
     /// <summary>Setzt nach dem nächsten Zeichnen den Fokus auf das erste Element zum CSS-Selektor.</summary>
     protected void FocusAfterRender(string selector) => pendingFocus = selector;
 
+    /// <summary>Setzt nach dem nächsten Zeichnen den Fokus auf das erste Feld mit Fehler – das rollt es auch ins Bild.</summary>
+    protected void FocusFirstErrorAfterRender() => pendingFirstError = true;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (pendingFocus is not { } selector)
+        var selector = pendingFocus;
+        var firstError = pendingFirstError;
+        pendingFocus = null;
+        pendingFirstError = false;
+        if (selector is null && !firstError)
         {
             return;
         }
 
-        pendingFocus = null;
         try
         {
-            await JS.InvokeVoidAsync("rechnungsWerk.focus", selector);
+            await (firstError
+                ? JS.InvokeVoidAsync("rechnungsWerk.focusFirstError")
+                : JS.InvokeVoidAsync("rechnungsWerk.focus", selector));
         }
         catch (JSDisconnectedException)
         {

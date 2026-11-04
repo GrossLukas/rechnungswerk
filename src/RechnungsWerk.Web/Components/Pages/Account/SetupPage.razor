@@ -1,5 +1,6 @@
 @page "/einrichtung"
 @rendermode InteractiveServer
+@inherits PageBase
 @inject SetupService Setup
 @inject SetupCodeStore SetupCode
 @inject NavigationManager Navigation
@@ -95,5 +96,6 @@ else
         }
 
         saving = false;
+        FocusFirstErrorAfterRender();
     }
 }

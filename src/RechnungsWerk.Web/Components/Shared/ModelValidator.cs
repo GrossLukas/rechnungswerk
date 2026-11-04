@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
 
 namespace RechnungsWerk.Web.Components.Shared;
 
@@ -13,6 +14,10 @@ public sealed class ModelValidator : ComponentBase, IDisposable
     private ValidationMessageStore? messages;
     private EditContext? subscribedContext;
     private bool validationRequested;
+    private bool focusFirstError;
+
+    [Inject]
+    private IJSRuntime JS { get; set; } = default!;
 
     [CascadingParameter]
     private EditContext? CurrentEditContext { get; set; }
@@ -46,6 +51,32 @@ public sealed class ModelValidator : ComponentBase, IDisposable
     {
         validationRequested = true;
         ValidateAll();
+
+        // Nach erfolglosem Absenden zum ersten Fehler: In langen Formularen steht er sonst außer Sicht, und die Seite
+        // wirkt, als sei nichts passiert.
+        if (subscribedContext?.GetValidationMessages().Any() == true)
+        {
+            focusFirstError = true;
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!focusFirstError)
+        {
+            return;
+        }
+
+        focusFirstError = false;
+        try
+        {
+            await JS.InvokeVoidAsync("rechnungsWerk.focusFirstError");
+        }
+        catch (JSDisconnectedException)
+        {
+            // Der Tab ist schon zu.
+        }
     }
 
     private void OnFieldChanged(object? sender, FieldChangedEventArgs e)

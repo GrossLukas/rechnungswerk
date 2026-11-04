@@ -53,4 +53,15 @@ window.rechnungsWerk = {
     focus: (selector) => {
         document.querySelector(selector)?.focus();
     },
+    // Nach erfolglosem Absenden: Fokus auf das erste Feld mit Fehler, das rollt es auch ins Bild. Ohne Feld wenigstens
+    // die erste allgemeine Meldung zeigen.
+    focusFirstError: () => {
+        const field = document.querySelector(
+            'main :is(input, select, textarea).invalid, main .has-error :is(input, select, textarea), main .line:has(.field-error) input');
+        if (field) {
+            field.focus();
+        } else {
+            document.querySelector('main .form-error')?.scrollIntoView({ block: 'nearest' });
+        }
+    },
 };

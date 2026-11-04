@@ -111,6 +111,8 @@
                     {
                         <p class="field-error line-error" role="alert">@lineError</p>
                     }
+                    <ValidationMessage For="() => line.Quantity" />
+                    <ValidationMessage For="() => line.UnitPrice" />
                 </li>
             }
         </ol>
@@ -310,11 +312,19 @@
         articlePick = "";
     }
 
-    private async Task SaveAsync()
+    private async Task SaveAsync(EditContext context)
     {
         // Der Knopf sperrt nur per aria-disabled, damit er den Fokus behält – ein Doppelklick käme sonst zweimal an.
         if (saving)
         {
+            return;
+        }
+
+        // Ein Feld, das sich nicht lesen ließ (z. B. ein geleertes Datum), behält seinen alten Wert – gespeichert würde
+        // sonst nicht, was dasteht.
+        if (context.GetValidationMessages().Any())
+        {
+            FocusFirstErrorAfterRender();
             return;
         }
 
@@ -329,5 +339,6 @@
 
         moreOpen = MoreFields.Any(field => result.ErrorFor(field) is not null);
         saving = false;
+        FocusFirstErrorAfterRender();
     }
 }
