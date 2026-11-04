@@ -9,7 +9,7 @@
 
 @if (form is not null)
 {
-    <EditForm Model="form" OnValidSubmit="SaveAsync" novalidate class="form">
+    <EditForm Model="form" OnValidSubmit="SaveAsync" OnInvalidSubmit="() => saved = false" novalidate class="form">
         <ModelValidator />
         <CompanyFields Model="form" />
         <div class="form-actions">

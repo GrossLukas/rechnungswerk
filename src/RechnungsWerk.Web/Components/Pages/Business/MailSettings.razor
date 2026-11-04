@@ -12,7 +12,7 @@
 
 @if (form is not null)
 {
-    <EditForm Model="form" OnValidSubmit="SaveAsync" novalidate class="form">
+    <EditForm Model="form" OnValidSubmit="SaveAsync" OnInvalidSubmit="() => saved = false" novalidate class="form">
         <ModelValidator />
         <fieldset class="section">
             <legend>SMTP-Server</legend>
