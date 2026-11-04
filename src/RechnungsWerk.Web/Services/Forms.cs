@@ -452,7 +452,8 @@ public sealed class InvoiceForm
         ServicePeriodStart = invoice.ServicePeriodStart,
         ServicePeriodEnd = invoice.ServicePeriodEnd,
         DueDate = invoice.DueDate,
-        PaymentTerms = invoice.PaymentTerms,
+        // Der gespeicherte Vorschlag ist keine eigene Eingabe: leer laden, damit er beim Speichern zur Fälligkeit passt.
+        PaymentTerms = invoice.PaymentTerms == InvoiceService.DefaultPaymentTerms(invoice.DueDate) ? null : invoice.PaymentTerms,
         BuyerReference = invoice.BuyerReference,
         OrderReference = invoice.OrderReference,
         Note = invoice.Note,

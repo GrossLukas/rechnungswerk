@@ -219,6 +219,41 @@ public sealed class InvoiceServiceTests
         Assert.Equal(draft.GrandTotal, view.Totals.GrandTotal);
     }
 
+    [Fact]
+    public async Task Suggested_payment_terms_follow_a_changed_due_date()
+    {
+        using var database = new TestDatabase();
+        var customerId = await SeedAsync(database);
+        var service = Service(database);
+        var ct = TestContext.Current.CancellationToken;
+        var id = (await service.SaveAsync(Form(customerId), ct)).Id!.Value;
+
+        var edit = InvoiceForm.From((await service.GetAsync(id, ct))!);
+        edit.DueDate = new DateOnly(2026, 12, 2);
+        await service.SaveAsync(edit, ct);
+
+        Assert.Equal("Zahlbar ohne Abzug bis zum 02.12.2026.", (await service.GetAsync(id, ct))!.PaymentTerms);
+    }
+
+    [Fact]
+    public async Task Own_payment_terms_stay_when_the_due_date_changes()
+    {
+        using var database = new TestDatabase();
+        var customerId = await SeedAsync(database);
+        var service = Service(database);
+        var ct = TestContext.Current.CancellationToken;
+        var form = Form(customerId);
+        form.PaymentTerms = "Zahlbar innerhalb von 30 Tagen.";
+        var id = (await service.SaveAsync(form, ct)).Id!.Value;
+
+        var edit = InvoiceForm.From((await service.GetAsync(id, ct))!);
+        edit.DueDate = new DateOnly(2026, 12, 2);
+        await service.SaveAsync(edit, ct);
+
+        Assert.Equal("Zahlbar innerhalb von 30 Tagen.", edit.PaymentTerms);
+        Assert.Equal("Zahlbar innerhalb von 30 Tagen.", (await service.GetAsync(id, ct))!.PaymentTerms);
+    }
+
     internal static async Task MarkSentAsync(TestDatabase database, int id, CancellationToken ct)
     {
         await using var db = database.Create();
